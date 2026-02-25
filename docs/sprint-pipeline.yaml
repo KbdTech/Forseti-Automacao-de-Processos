@@ -1,0 +1,105 @@
+name: sprint-pipeline
+description: Pipeline de implementação de uma US completa — Sistema OS Prefeitura
+version: "1.0"
+
+# Referência: CLAUDE.md > Fluxo de Trabalho ao Iniciar uma US
+
+steps:
+  - id: ler-us
+    name: Ler e entender a US
+    agent: "@architect"
+    description: >
+      Ler a US no PDF (Historias_de_Usuario_Sistema_OS.pdf) e no
+      docs/prd/ correspondente. Listar critérios de aceitação Gherkin,
+      regras de negócio e componentes a criar.
+
+  - id: gerar-models
+    name: Criar models SQLAlchemy
+    agent: "@data-engineer"
+    depends_on: [ler-us]
+    description: >
+      Criar/atualizar models em backend/app/models/.
+      UUIDs como PK, TIMESTAMPTZ, ENUMs no PostgreSQL.
+      Seguir modelagem do CLAUDE.md seção "Modelagem de Banco".
+
+  - id: gerar-schemas
+    name: Criar schemas Pydantic
+    agent: "@dev"
+    depends_on: [gerar-models]
+    description: >
+      Criar schemas de request/response em backend/app/schemas/.
+      Validação estrita com Pydantic v2.
+
+  - id: gerar-migrations
+    name: Criar migrações Alembic
+    agent: "@dev"
+    depends_on: [gerar-schemas]
+    description: >
+      Rodar: alembic revision --autogenerate -m "us-{id}: descrição"
+      Verificar o arquivo gerado em backend/alembic/versions/.
+      Rodar: alembic upgrade head
+
+  - id: gerar-services
+    name: Implementar services (business logic)
+    agent: "@dev"
+    depends_on: [gerar-migrations]
+    description: >
+      Criar services em backend/app/services/.
+      Workflow engine valida transições — rejeitar inválidas com HTTP 422.
+      Inserir em ordem_historico após cada transição (append-only).
+
+  - id: gerar-routes
+    name: Implementar endpoints FastAPI
+    agent: "@dev"
+    depends_on: [gerar-services]
+    description: >
+      Criar routers em backend/app/api/routes/.
+      Validação de role via Depends(require_role('perfil')) em CADA endpoint.
+      Seguir referência de endpoints do CLAUDE.md.
+
+  - id: gerar-componentes-react
+    name: Implementar componentes React
+    agent: "@dev"
+    depends_on: [ler-us]
+    description: >
+      Criar componentes em frontend/src/components/ e pages/.
+      Tipagem estrita (sem any). Skeleton loaders, empty states,
+      modais de confirmação. StatusBadge com cores padronizadas.
+
+  - id: conectar-api
+    name: Conectar front ao back via services/apiClient
+    agent: "@dev"
+    depends_on: [gerar-routes, gerar-componentes-react]
+    description: >
+      Implementar/atualizar frontend/src/services/.
+      Substituir mocks por chamadas reais à API.
+      Usar TanStack Query para cache e loading states.
+
+  - id: gerar-testes
+    name: Escrever testes
+    agent: "@qa"
+    depends_on: [conectar-api]
+    description: >
+      Back-end: pytest para regras de negócio críticas e transições de status.
+      Front-end: Vitest + RTL para componentes e hooks.
+      Referenciar US nos comentários: # US-00X RN-X
+
+  - id: validar-gherkin
+    name: Validar critérios de aceitação Gherkin
+    agent: "@qa"
+    depends_on: [gerar-testes]
+    description: >
+      Verificar TODOS os cenários Gherkin da US contra o comportamento
+      real do sistema. Preencher checklist de qualidade do CLAUDE.md.
+
+checklist:
+  - Todos os critérios de aceitação Gherkin cobertos
+  - Regras de negócio no back-end (não só front)
+  - Validação de role no endpoint
+  - Transição validada pelo workflow engine
+  - Registro em ordem_historico após transição
+  - Mensagens de erro em pt-BR
+  - Loading states e empty states no front
+  - Modal de confirmação antes de ações críticas
+  - Responsividade básica
+  - Testes para regras críticas

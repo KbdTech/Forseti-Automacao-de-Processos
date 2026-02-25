@@ -34,3 +34,20 @@ npm-debug.log*
 .vscode/
 .idea/
 *.swp
+
+# Environment & Secrets (AIOS)
+*.key
+*.pem
+
+# Dependencies (AIOS)
+node_modules
+
+# Build & Logs (AIOS)
+build/
+logs/
+
+# AIOS Local (AIOS)
+.aios-core/local/
+.aios-core/node_modules/
+.claude/settings.local.json
+.aios/install-log.txt

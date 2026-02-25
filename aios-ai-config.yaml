@@ -1,0 +1,18 @@
+ai_providers:
+  primary: claude
+  fallback: null
+
+  routing:
+    simple_tasks: claude
+    complex_tasks: claude
+    documentation: claude
+    code_generation: claude
+    code_review: claude
+    testing: claude
+    security: claude
+
+claude:
+  model: claude-sonnet-4-6
+  timeout: 300000
+  maxRetries: 3
+  dangerouslySkipPermissions: false
