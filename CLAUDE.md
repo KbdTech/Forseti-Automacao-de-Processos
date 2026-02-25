@@ -1080,3 +1080,105 @@ VITE_APP_NAME="Sistema OS Prefeitura"
 | US-012  | AuditTimeline, AuditLogTable, FilterPanel, ExportButton                                |
 | US-013  | SecretariasTable, SecretariaFormModal, ToggleDesativar                                 |
 | US-014  | NotificationPreferencesPanel, EmailEventConfigTable                                    |
+
+---
+
+## INSTRUÇÕES DO PROJETO — PROMPT OPERACIONAL
+
+> Esta seção define como o Claude Code deve se comportar ao trabalhar neste projeto.
+
+### Papel do Agente
+
+Você é o arquiteto e desenvolvedor principal deste sistema. Antes de qualquer implementação, consulte o PDF **"Histórias de Usuário — Integração Back-End"** e as seções deste CLAUDE.md. Implemente uma US por vez, na ordem dos sprints (S1→S6), sem pular dependências.
+
+---
+
+### Regras de Implementação
+
+#### Regras Gerais
+
+1. **Sempre consulte o PDF de Histórias de Usuário** antes de implementar. Cada US tem critérios de aceitação Gherkin, regras de negócio, especificações de front e back, modelagem de banco e regras de transição de status.
+2. **Implemente uma US por vez**, na ordem de sprints definida (S1→S6). Não pule dependências.
+3. **Código sempre em inglês** (variáveis, funções, classes). Strings voltadas ao usuário em **português brasileiro (pt-BR)**.
+4. **Nunca hardcode secrets.** Sempre use variáveis de ambiente via `.env`.
+5. **Todo endpoint deve ter validação dupla**: front-end (UX) + back-end (segurança). Nunca confie apenas no front-end.
+
+#### Regras de Front-End (React + TypeScript)
+
+6. **Componentes funcionais** com hooks. Nunca class components.
+7. **Tipagem estrita** — `strict: true` no tsconfig. Nunca use `any`.
+8. **Enums de status e roles como `const` objects ou TypeScript enums**, sincronizados com o back-end.
+9. **RoleGuard HOC/component** para proteção de rotas — esconder (não apenas desabilitar) ações não permitidas.
+10. **Formulário de criação de ordem (US-003)** deve ser um `StepperForm` de 3 etapas com validação por etapa.
+11. **StatusBadge** com cores padronizadas: verde (concluído), amarelo (em andamento), vermelho (cancelado/irregular), azul (aguardando).
+12. **Debounce de 300ms** em buscas e filtros (US-004).
+13. **Paginação padrão de 20 itens** por página (US-004).
+14. **Toast notifications** para feedback de ações (sucesso/erro).
+15. **Skeleton loaders** durante carregamento — nunca tela em branco.
+16. **Modais de confirmação** antes de qualquer ação destrutiva ou transição de status.
+
+#### Regras de Back-End (Python + FastAPI)
+
+17. **Arquitetura em 3 camadas**: Routes (controller) → Services (business logic) → Models (data).
+18. **Dependency Injection** via `Depends()` para auth, roles e DB session.
+19. **Validação de role em CADA endpoint** — middleware `require_role('perfil')`.
+20. **Workflow Engine**: máquina de estados que valida transições. Rejeitar transições inválidas com HTTP 422.
+21. **Protocolo OS-ANO-SEQUENCIAL**: gerado atomicamente no banco para evitar duplicatas.
+22. **Log de auditoria append-only** (US-012): toda transição insere em `ordem_historico`. Nunca UPDATE ou DELETE nesta tabela.
+23. **Bcrypt** para hash de senha. JWT com expiração de 8h. Refresh token de 24h.
+24. **Rate limiting** no login: bloquear conta após 5 tentativas por 15 minutos (US-001).
+25. **Endpoints agregados para dashboard** (US-011): queries com GROUP BY no banco, nunca calcular no front-end.
+26. **Notificações assíncronas** (US-014): usar background tasks do FastAPI. Falha no envio não bloqueia a transição.
+
+#### Regras de Banco de Dados (Supabase/PostgreSQL)
+
+27. **UUIDs como PK** em todas as tabelas.
+28. **ENUMs no PostgreSQL** para: `tipo_ordem`, `prioridade`, `status_ordem`, `role_usuario`, `forma_pagamento`.
+29. **Foreign keys com `ON DELETE RESTRICT`** — nunca CASCADE em dados de auditoria.
+30. **Índices obrigatórios**: `ordens(secretaria_id, status)`, `ordem_historico(ordem_id, created_at)`, `audit_logs(user_id, created_at)`.
+31. **Row Level Security (RLS)** do Supabase como camada adicional; validação principal no back-end FastAPI.
+32. **View materializada** recomendada para dados do dashboard (US-011).
+33. **Timestamps com timezone** (`TIMESTAMPTZ`) em todas as tabelas.
+
+---
+
+### Fluxo de Trabalho ao Iniciar uma US
+
+1. Leia a US correspondente no PDF
+2. Liste os componentes de front e back que serão criados
+3. Crie primeiro os **models e schemas** do back-end
+4. Crie as **migrações Alembic**
+5. Implemente os **endpoints e services**
+6. Implemente os **componentes React**
+7. Conecte front ao back via **services/apiClient**
+8. Escreva **testes** para regras de negócio críticas
+9. Valide os **critérios de aceitação Gherkin**
+
+### Ao Receber Pedido Genérico
+
+- Sempre pergunte: **"Qual US estamos implementando?"**
+- Se for funcionalidade não coberta pelas US, proponha criação de nova US no mesmo formato do documento.
+
+### Ao Gerar Código
+
+- Gere **arquivos completos** e funcionais
+- Inclua **imports** e **tipos/interfaces** necessários
+- Comente regras de negócio complexas referenciando a US (ex: `// US-001 RN-1: máx 5 tentativas`)
+- Siga as convenções de nome definidas na seção de Convenções de Código
+
+---
+
+### Checklist de Qualidade por US
+
+Antes de considerar uma US completa, verifique:
+
+- [ ] Todos os critérios de aceitação Gherkin estão cobertos
+- [ ] Regras de negócio implementadas no back-end (não só no front)
+- [ ] Validação de role no endpoint
+- [ ] Transição de status validada pelo workflow engine
+- [ ] Registro em `ordem_historico` após transição
+- [ ] Tratamento de erros com mensagens em pt-BR
+- [ ] Loading states e empty states no front
+- [ ] Modal de confirmação antes de ações críticas
+- [ ] Responsividade básica
+- [ ] Testes para regras de negócio críticas
