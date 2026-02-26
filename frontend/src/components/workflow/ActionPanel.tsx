@@ -54,6 +54,10 @@ interface ActionConfig {
   observacaoMinChars: number
   /** Exibe alerta vermelho de ação irreversível no dialog. */
   irreversivel?: boolean
+  /** Alerta vermelho customizado exibido no Dialog (ex.: "ordem ficará suspensa"). */
+  customAlertMessage?: string
+  /** Observação enviada quando o usuário não digita nada no textarea. */
+  defaultObservacao?: string
   confirmLabel: string
   confirmVariant: ButtonVariant
 }
@@ -145,6 +149,7 @@ const ACTION_MAP: Partial<
           'Confirma o envio dos documentos solicitados pela Controladoria? Após confirmar, a ordem retornará para análise.',
         observacaoLabel: 'Descreva os documentos enviados (opcional)',
         observacaoMinChars: 0,
+        defaultObservacao: 'Documentação enviada',
         confirmLabel: 'Confirmar Envio',
         confirmVariant: 'default',
       },
@@ -160,36 +165,36 @@ const ACTION_MAP: Partial<
         label: 'Aprovar',
         variant: 'default',
         Icon: CheckCircle,
-        dialogTitle: 'Aprovar Ordem',
+        dialogTitle: 'Aprovar Conformidade',
         dialogDescription:
           'Confirma a aprovação desta ordem para empenho pela Contabilidade?',
         observacaoLabel: 'Observação (opcional)',
         observacaoMinChars: 0,
-        confirmLabel: 'Confirmar Aprovação',
+        confirmLabel: 'Aprovar Conformidade',
         confirmVariant: 'default',
       },
       {
         acao: 'solicitar_documentacao',
-        label: 'Solicitar Documentação',
+        label: 'Solicitar Documentos',
         variant: 'outline',
         Icon: RotateCcw,
         dialogTitle: 'Solicitar Documentação',
-        dialogDescription: 'Descreva quais documentos precisam ser enviados pela secretaria.',
-        observacaoLabel: 'Documentação necessária',
+        dialogDescription: 'Descreva os documentos que precisam ser enviados pela secretaria.',
+        observacaoLabel: 'Descreva os documentos necessários',
         observacaoMinChars: 20,
-        confirmLabel: 'Solicitar Documentação',
+        confirmLabel: 'Solicitar Documentos',
         confirmVariant: 'outline',
       },
       {
         acao: 'irregularidade',
-        label: 'Registrar Irregularidade',
+        label: 'Apontar Irregularidade',
         variant: 'destructive',
         Icon: AlertTriangle,
         dialogTitle: 'Registrar Irregularidade',
         dialogDescription: 'Descreva a irregularidade fiscal/legal identificada.',
-        observacaoLabel: 'Descrição da irregularidade',
+        observacaoLabel: 'Descreva a irregularidade identificada',
         observacaoMinChars: 50, // US-007 RN-38
-        irreversivel: false,
+        customAlertMessage: 'Atenção: esta ordem ficará suspensa até resolução.',
         confirmLabel: 'Registrar Irregularidade',
         confirmVariant: 'destructive',
       },
@@ -229,7 +234,7 @@ export function ActionPanel({
     mutationFn: () =>
       executeAcao(orderId, {
         acao: activeAction!.acao,
-        observacao: observacao.trim() || undefined,
+        observacao: observacao.trim() || activeAction!.defaultObservacao || undefined,
       }),
     onSuccess: () => {
       toast.success('Ação realizada com sucesso', {
@@ -293,6 +298,14 @@ export function ActionPanel({
               <DialogTitle>{activeAction.dialogTitle}</DialogTitle>
               <DialogDescription>{activeAction.dialogDescription}</DialogDescription>
             </DialogHeader>
+
+            {/* Alerta customizado (ex.: "ordem ficará suspensa") — US-007 */}
+            {activeAction.customAlertMessage && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{activeAction.customAlertMessage}</AlertDescription>
+              </Alert>
+            )}
 
             {/* Alerta de ação irreversível — US-005 RN-29 */}
             {activeAction.irreversivel && (
