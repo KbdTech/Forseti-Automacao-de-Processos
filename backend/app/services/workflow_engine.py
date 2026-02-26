@@ -377,6 +377,36 @@ class WorkflowEngine:
             ordem.data_atesto = datetime.now(timezone.utc)
             ordem.atestado_por = user.id
 
+        elif acao == "liquidar":
+            # US-010 RN-50: data_liquidacao não pode ser futura
+            data_liq = (dados_extras or {}).get("data_liquidacao")
+            if data_liq is not None and data_liq.date() > datetime.now(timezone.utc).date():
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail="A data de liquidação não pode ser uma data futura.",
+                )
+
+        elif acao == "pagar":
+            # US-010 RN-51: data_pagamento não pode ser futura
+            data_pgto = (dados_extras or {}).get("data_pagamento")
+            if data_pgto is not None and data_pgto.date() > datetime.now(timezone.utc).date():
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail="A data de pagamento não pode ser uma data futura.",
+                )
+            # US-010 RN-52: valor pago diferente do liquidado exige observação como justificativa
+            valor_pago = (dados_extras or {}).get("valor_pago")
+            if valor_pago is not None and ordem.valor_liquidado is not None:
+                diferenca = abs(float(valor_pago) - float(ordem.valor_liquidado))
+                if diferenca > 0.009 and not obs_texto:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                        detail=(
+                            "Justificativa (campo 'observacao') obrigatória quando o valor pago "
+                            "difere do valor liquidado."
+                        ),
+                    )
+
         # Aplica campos extras do chamador (sobrescreve efeitos automáticos se necessário)
         if dados_extras:
             for campo, valor in dados_extras.items():

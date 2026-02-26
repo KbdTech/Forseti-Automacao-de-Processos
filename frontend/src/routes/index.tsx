@@ -14,8 +14,9 @@
  *     /gabinete               → AnaliseGabinetePage [gabinete, admin]
  *     /controladoria          → AnaliseControladoriaPage [controladoria, admin]
  *     /contabilidade/empenho  → EmpenhoPage          [contabilidade, admin]
- *     /contabilidade/liquidacao→DashboardPage*      [contabilidade, admin]
- *     /tesouraria/pagamento   → DashboardPage*      [tesouraria, admin]
+ *     /contabilidade/liquidacao→ LiquidacaoPage      [contabilidade, admin]
+ *     /tesouraria/pagamento   → PagamentoPage       [tesouraria, admin]
+ *     /tesouraria/pagas       → OrdensPagasPage     [tesouraria, contabilidade, admin]
  *     /secretaria/ordens      → DashboardPage*      [secretaria, admin]
  *     /secretaria/nova-ordem  → DashboardPage*      [secretaria]
  *     /secretaria/devolvidas  → DevolvidasPage       [secretaria, admin]
@@ -44,6 +45,9 @@ import EmpenhoPage from '@/pages/contabilidade/EmpenhoPage'
 import DevolvidasPage from '@/pages/secretaria/DevolvidasPage'
 import EditarOrdemPage from '@/pages/secretaria/EditarOrdemPage'
 import AtestoPage from '@/pages/secretaria/AtestoPage'
+import LiquidacaoPage from '@/pages/contabilidade/LiquidacaoPage'
+import PagamentoPage from '@/pages/tesouraria/PagamentoPage'
+import OrdensPagasPage from '@/pages/tesouraria/OrdensPagasPage'
 import AppLayout from '@/components/layout/AppLayout'
 import RoleGuard from '@/components/layout/RoleGuard'
 
@@ -151,7 +155,7 @@ export const router = createBrowserRouter([
         path: 'contabilidade/liquidacao',
         element: (
           <Guard roles={['contabilidade', 'admin']}>
-            <DashboardPage />
+            <LiquidacaoPage />
           </Guard>
         ),
       },
@@ -161,7 +165,15 @@ export const router = createBrowserRouter([
         path: 'tesouraria/pagamento',
         element: (
           <Guard roles={['tesouraria', 'admin']}>
-            <DashboardPage />
+            <PagamentoPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'tesouraria/pagas',
+        element: (
+          <Guard roles={['tesouraria', 'contabilidade', 'admin']}>
+            <OrdensPagasPage />
           </Guard>
         ),
       },
