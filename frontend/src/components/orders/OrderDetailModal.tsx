@@ -34,7 +34,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/workflow/StatusBadge'
 import { getOrdem } from '@/services/ordensService'
 import { TIPO_ORDEM_LABELS, PRIORIDADE_CONFIG, PRIORIDADE_LABELS } from '@/utils/constants'
-import type { TipoOrdem, Prioridade, OrdemHistorico } from '@/types/ordem'
+import type { TipoOrdem, Prioridade, OrdemHistorico, StatusOrdem } from '@/types/ordem'
 
 // ---------------------------------------------------------------------------
 // Props
@@ -43,6 +43,16 @@ import type { TipoOrdem, Prioridade, OrdemHistorico } from '@/types/ordem'
 interface OrderDetailModalProps {
   orderId: string | null
   onClose: () => void
+  /**
+   * Slot opcional para renderizar ações de workflow na parte inferior do modal.
+   * Chamado quando a ordem está carregada.
+   * US-005: ActionPanel do Gabinete é injetado aqui.
+   */
+  renderActions?: (
+    orderId: string,
+    status: StatusOrdem,
+    onActionComplete: () => void,
+  ) => React.ReactNode
 }
 
 // ---------------------------------------------------------------------------
@@ -178,8 +188,8 @@ function HistoricoEntry({ entry }: { entry: OrdemHistorico }) {
 // Componente principal
 // ---------------------------------------------------------------------------
 
-export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
-  const { data: ordem, isLoading, isError } = useQuery({
+export function OrderDetailModal({ orderId, onClose, renderActions }: OrderDetailModalProps) {
+  const { data: ordem, isLoading, isError, refetch } = useQuery({
     queryKey: ['ordem', orderId],
     queryFn: () => getOrdem(orderId!),
     enabled: orderId !== null,
@@ -364,6 +374,18 @@ export function OrderDetailModal({ orderId, onClose }: OrderDetailModalProps) {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Slot de ações de workflow — injetado pela página pai (ex: ActionPanel do Gabinete) */}
+        {renderActions && ordem && !isLoading && (
+          <>
+            <Separator className="mt-2" />
+            <div className="pt-3">
+              {renderActions(ordem.id, ordem.status, () => {
+                refetch()
+              })}
+            </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
