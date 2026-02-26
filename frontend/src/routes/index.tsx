@@ -20,7 +20,7 @@
  *     /secretaria/nova-ordem  → DashboardPage*      [secretaria]
  *     /secretaria/devolvidas  → DevolvidasPage       [secretaria, admin]
  *     /secretaria/ordens/:id/editar → EditarOrdemPage [secretaria]
- *     /secretaria/atesto      → DashboardPage*      [secretaria, admin]
+ *     /secretaria/atesto      → AtestoPage           [secretaria, admin]
  *     /dashboard              → DashboardPage*      [gabinete, admin]
  *     /audit                  → DashboardPage*      [admin]
  *
@@ -43,6 +43,7 @@ import AnaliseControladoriaPage from '@/pages/controladoria/AnaliseControladoria
 import EmpenhoPage from '@/pages/contabilidade/EmpenhoPage'
 import DevolvidasPage from '@/pages/secretaria/DevolvidasPage'
 import EditarOrdemPage from '@/pages/secretaria/EditarOrdemPage'
+import AtestoPage from '@/pages/secretaria/AtestoPage'
 import AppLayout from '@/components/layout/AppLayout'
 import RoleGuard from '@/components/layout/RoleGuard'
 
@@ -202,7 +203,7 @@ export const router = createBrowserRouter([
         path: 'secretaria/atesto',
         element: (
           <Guard roles={['secretaria', 'admin']}>
-            <DashboardPage />
+            <AtestoPage />
           </Guard>
         ),
       },

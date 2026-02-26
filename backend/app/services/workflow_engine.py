@@ -147,9 +147,10 @@ class WorkflowEngine:
         # Contabilidade — empenho orçamentário (US-008)
         # ------------------------------------------------------------------
         (StatusOrdemEnum.AGUARDANDO_EMPENHO, "empenhar"): _TransitionConfig(
-            novo_status=StatusOrdemEnum.AGUARDANDO_EXECUCAO,
+            novo_status=StatusOrdemEnum.AGUARDANDO_ATESTO,
             roles_permitidos=(RoleEnum.contabilidade,),
             # US-008 RN-43: data_empenho registrada automaticamente
+            # US-009: transição automática para AGUARDANDO_ATESTO na emissão do empenho
         ),
         # ------------------------------------------------------------------
         # Secretaria — início do atesto (US-009)
@@ -364,6 +365,13 @@ class WorkflowEngine:
             ordem.data_empenho = datetime.now(timezone.utc)
 
         elif acao == "atestar":
+            # US-009 RN-49: numero_nf obrigatório para concluir o atesto
+            numero_nf = str((dados_extras or {}).get("numero_nf", "")).strip()
+            if not numero_nf:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail="Número da nota fiscal (numero_nf) é obrigatório para o atesto.",
+                )
             # US-009 RN-48: data_atesto registrada automaticamente
             # US-009 RN-46: atestado_por = usuário que executou o atesto
             ordem.data_atesto = datetime.now(timezone.utc)
