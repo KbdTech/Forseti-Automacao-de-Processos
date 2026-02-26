@@ -1,0 +1,176 @@
+/**
+ * Constantes de roteamento — US-002.
+ *
+ * Centraliza:
+ *   - DEFAULT_ROUTE: rota padrão após login por perfil
+ *   - SIDEBAR_ITEMS: itens de menu filtrados por role
+ *
+ * Sincronizado com a Matriz de Permissões do CLAUDE.md seção 7.
+ */
+
+import type { RoleEnum } from '@/types/auth.types'
+
+// ---------------------------------------------------------------------------
+// Rota padrão por perfil
+// ---------------------------------------------------------------------------
+
+/** Rota para onde cada perfil é redirecionado após login bem-sucedido. */
+export const DEFAULT_ROUTE: Record<RoleEnum, string> = {
+  secretaria: '/secretaria/ordens',
+  gabinete: '/gabinete',
+  controladoria: '/controladoria',
+  contabilidade: '/contabilidade/empenho',
+  tesouraria: '/tesouraria/pagamento',
+  admin: '/admin/usuarios',
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar
+// ---------------------------------------------------------------------------
+
+/** Chaves dos ícones Lucide usados na sidebar (evita import dinâmico não tipado). */
+export type SidebarIconKey =
+  | 'FileText'
+  | 'FilePlus'
+  | 'RotateCcw'
+  | 'CheckSquare'
+  | 'Building2'
+  | 'ShieldCheck'
+  | 'Receipt'
+  | 'Banknote'
+  | 'CreditCard'
+  | 'LayoutDashboard'
+  | 'ScrollText'
+  | 'Users'
+  | 'Landmark'
+
+/** Definição de um item de menu na sidebar. */
+export interface SidebarItem {
+  key: string
+  label: string
+  path: string
+  iconKey: SidebarIconKey
+  /** Perfis que visualizam e podem acessar este item. */
+  roles: RoleEnum[]
+}
+
+/**
+ * Todos os itens de menu do sistema.
+ *
+ * Cada componente Sidebar filtra esta lista com base no role do usuário
+ * autenticado (US-002 RN-12: botões/itens ocultos, não apenas desabilitados).
+ */
+export const SIDEBAR_ITEMS: SidebarItem[] = [
+  // --- Secretaria ---
+  {
+    key: 'minhas-ordens',
+    label: 'Minhas Ordens',
+    path: '/secretaria/ordens',
+    iconKey: 'FileText',
+    roles: ['secretaria', 'admin'],
+  },
+  {
+    key: 'nova-ordem',
+    label: 'Nova Ordem',
+    path: '/secretaria/nova-ordem',
+    iconKey: 'FilePlus',
+    roles: ['secretaria'],
+  },
+  {
+    key: 'devolvidas',
+    label: 'Devolvidas para Alteração',
+    path: '/secretaria/devolvidas',
+    iconKey: 'RotateCcw',
+    roles: ['secretaria', 'admin'],
+  },
+  {
+    key: 'atesto',
+    label: 'Atesto de NF',
+    path: '/secretaria/atesto',
+    iconKey: 'CheckSquare',
+    roles: ['secretaria', 'admin'],
+  },
+
+  // --- Gabinete ---
+  {
+    key: 'gabinete',
+    label: 'Pipeline Gabinete',
+    path: '/gabinete',
+    iconKey: 'Building2',
+    roles: ['gabinete', 'admin'],
+  },
+
+  // --- Controladoria ---
+  {
+    key: 'controladoria',
+    label: 'Pipeline Controladoria',
+    path: '/controladoria',
+    iconKey: 'ShieldCheck',
+    roles: ['controladoria', 'admin'],
+  },
+
+  // --- Contabilidade ---
+  {
+    key: 'empenho',
+    label: 'Pipeline Empenho',
+    path: '/contabilidade/empenho',
+    iconKey: 'Receipt',
+    roles: ['contabilidade', 'admin'],
+  },
+  {
+    key: 'liquidacao',
+    label: 'Pipeline Liquidação',
+    path: '/contabilidade/liquidacao',
+    iconKey: 'Banknote',
+    roles: ['contabilidade', 'admin'],
+  },
+
+  // --- Tesouraria ---
+  {
+    key: 'pagamento',
+    label: 'Pipeline Pagamento',
+    path: '/tesouraria/pagamento',
+    iconKey: 'CreditCard',
+    roles: ['tesouraria', 'admin'],
+  },
+
+  // --- Dashboard / Gestão ---
+  {
+    key: 'dashboard',
+    label: 'Dashboard Executivo',
+    path: '/dashboard',
+    iconKey: 'LayoutDashboard',
+    roles: ['gabinete', 'admin'],
+  },
+  {
+    key: 'audit',
+    label: 'Log de Auditoria',
+    path: '/audit',
+    iconKey: 'ScrollText',
+    roles: ['admin'],
+  },
+  {
+    key: 'usuarios',
+    label: 'Gestão de Usuários',
+    path: '/admin/usuarios',
+    iconKey: 'Users',
+    roles: ['admin'],
+  },
+  {
+    key: 'secretarias',
+    label: 'Gestão de Secretarias',
+    path: '/admin/secretarias',
+    iconKey: 'Landmark',
+    roles: ['admin'],
+  },
+]
+
+/** Rótulos legíveis dos perfis para exibição na UI. */
+export const ROLE_LABEL: Record<RoleEnum, string> = {
+  secretaria: 'Secretaria',
+  gabinete: 'Gabinete do Prefeito',
+  controladoria: 'Controladoria',
+  contabilidade: 'Contabilidade',
+  tesouraria: 'Tesouraria',
+  admin: 'Administrador',
+}

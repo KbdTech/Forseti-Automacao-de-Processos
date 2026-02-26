@@ -1,0 +1,213 @@
+/**
+ * Configuração central de rotas — US-001 e US-002.
+ *
+ * Usa createBrowserRouter (React Router v6.4+) para suporte ao Data API.
+ *
+ * Estrutura:
+ *   /login                    → LoginPage          (público)
+ *   /primeiro-acesso          → PrimeiroAcessoPage  (público)
+ *   /acesso-negado            → AccessDeniedPage    (público)
+ *
+ *   / (AppLayout)
+ *     /admin/usuarios         → UserManagementPage  [admin]
+ *     /admin/secretarias      → DashboardPage*      [admin]
+ *     /gabinete               → DashboardPage*      [gabinete, admin]
+ *     /controladoria          → DashboardPage*      [controladoria, admin]
+ *     /contabilidade/empenho  → DashboardPage*      [contabilidade, admin]
+ *     /contabilidade/liquidacao→DashboardPage*      [contabilidade, admin]
+ *     /tesouraria/pagamento   → DashboardPage*      [tesouraria, admin]
+ *     /secretaria/ordens      → DashboardPage*      [secretaria, admin]
+ *     /secretaria/nova-ordem  → DashboardPage*      [secretaria]
+ *     /secretaria/devolvidas  → DashboardPage*      [secretaria, admin]
+ *     /secretaria/atesto      → DashboardPage*      [secretaria, admin]
+ *     /dashboard              → DashboardPage*      [gabinete, admin]
+ *     /audit                  → DashboardPage*      [admin]
+ *
+ * * Placeholder até Sprints 2–6 — substituído progressivamente.
+ *
+ * US-002 RN-12: RoleGuard oculta rotas não autorizadas (retorna 403 / /acesso-negado).
+ */
+
+import { createBrowserRouter, Navigate } from 'react-router-dom'
+
+import LoginPage from '@/pages/auth/LoginPage'
+import PrimeiroAcessoPage from '@/pages/auth/PrimeiroAcessoPage'
+import AccessDeniedPage from '@/pages/auth/AccessDeniedPage'
+import DashboardPage from '@/pages/DashboardPage'
+import UserManagementPage from '@/pages/admin/UserManagementPage'
+import AppLayout from '@/components/layout/AppLayout'
+import RoleGuard from '@/components/layout/RoleGuard'
+
+// ---------------------------------------------------------------------------
+// Wrapper helper para reduzir repetição de RoleGuard nas rotas filhas
+// ---------------------------------------------------------------------------
+
+function Guard({
+  roles,
+  children,
+}: {
+  roles: Parameters<typeof RoleGuard>[0]['roles']
+  children: React.ReactNode
+}) {
+  return <RoleGuard roles={roles}>{children}</RoleGuard>
+}
+
+// ---------------------------------------------------------------------------
+// Router
+// ---------------------------------------------------------------------------
+
+export const router = createBrowserRouter([
+  // -------------------------------------------------------------------------
+  // Rotas públicas
+  // -------------------------------------------------------------------------
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/primeiro-acesso',
+    element: <PrimeiroAcessoPage />,
+  },
+  {
+    path: '/acesso-negado',
+    element: <AccessDeniedPage />,
+  },
+
+  // -------------------------------------------------------------------------
+  // Rotas protegidas — envolvidas pelo AppLayout
+  // -------------------------------------------------------------------------
+  {
+    path: '/',
+    element: <AppLayout />,
+    children: [
+      // Redirect raiz → /login (para forçar autenticação via RoleGuard)
+      { index: true, element: <Navigate to="/login" replace /> },
+
+      // --- Admin ---
+      {
+        path: 'admin/usuarios',
+        element: (
+          <Guard roles={['admin']}>
+            <UserManagementPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'admin/secretarias',
+        element: (
+          <Guard roles={['admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'audit',
+        element: (
+          <Guard roles={['admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+
+      // --- Gabinete ---
+      {
+        path: 'gabinete',
+        element: (
+          <Guard roles={['gabinete', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+
+      // --- Controladoria ---
+      {
+        path: 'controladoria',
+        element: (
+          <Guard roles={['controladoria', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+
+      // --- Contabilidade ---
+      {
+        path: 'contabilidade/empenho',
+        element: (
+          <Guard roles={['contabilidade', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'contabilidade/liquidacao',
+        element: (
+          <Guard roles={['contabilidade', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+
+      // --- Tesouraria ---
+      {
+        path: 'tesouraria/pagamento',
+        element: (
+          <Guard roles={['tesouraria', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+
+      // --- Secretaria ---
+      {
+        path: 'secretaria/ordens',
+        element: (
+          <Guard roles={['secretaria', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'secretaria/nova-ordem',
+        element: (
+          <Guard roles={['secretaria']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'secretaria/devolvidas',
+        element: (
+          <Guard roles={['secretaria', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'secretaria/atesto',
+        element: (
+          <Guard roles={['secretaria', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+
+      // --- Dashboard executivo ---
+      {
+        path: 'dashboard',
+        element: (
+          <Guard roles={['gabinete', 'admin']}>
+            <DashboardPage />
+          </Guard>
+        ),
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Catch-all → /login
+  // -------------------------------------------------------------------------
+  {
+    path: '*',
+    element: <Navigate to="/login" replace />,
+  },
+])

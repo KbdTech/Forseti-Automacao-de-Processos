@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_HOURS: int = 8
     JWT_REFRESH_EXPIRATION_HOURS: int = 24
 
+    # Autenticação — controle de bloqueio por tentativas (US-001 RN-1)
+    MAX_LOGIN_ATTEMPTS: int = 5
+    LOCKOUT_DURATION_MINUTES: int = 15
+
     # CORS
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 

@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.api.routes import auth as auth_router
+from app.api.routes import users as users_router
 
 app = FastAPI(
     title="Sistema OS Prefeitura",
@@ -19,8 +21,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers serão registrados aqui com prefixo /api
-# Exemplo: app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+# --- Routers registrados ---
+app.include_router(auth_router.router)   # US-001: /api/auth/*
+app.include_router(users_router.router)  # US-002: /api/users/*
 
 
 @app.get("/health", tags=["infra"])
