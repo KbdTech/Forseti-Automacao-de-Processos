@@ -120,9 +120,9 @@ export default function LoginPage() {
         secretaria: '/secretaria/ordens',
         gabinete: '/gabinete',
         controladoria: '/controladoria',
-        contabilidade: '/contabilidade',
-        tesouraria: '/tesouraria',
-        admin: '/admin',
+        contabilidade: '/contabilidade/empenho',
+        tesouraria: '/tesouraria/pagamento',
+        admin: '/admin/usuarios',
       }
       navigate(roleRoutes[response.user.role] ?? '/dashboard', { replace: true })
     } catch (error) {
