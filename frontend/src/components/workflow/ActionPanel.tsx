@@ -15,7 +15,7 @@
 
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, RotateCcw, XCircle, Loader2, AlertTriangle } from 'lucide-react'
+import { CheckCircle, RotateCcw, XCircle, Loader2, AlertTriangle, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
 
@@ -126,6 +126,26 @@ const ACTION_MAP: Partial<
         observacaoLabel: 'Observação (opcional)',
         observacaoMinChars: 0,
         confirmLabel: 'Confirmar Reenvio',
+        confirmVariant: 'default',
+      },
+    ],
+  },
+  // -------------------------------------------------------------------------
+  // Secretaria — envio de documentação (US-007)
+  // -------------------------------------------------------------------------
+  AGUARDANDO_DOCUMENTACAO: {
+    secretaria: [
+      {
+        acao: 'enviar_documentacao',
+        label: 'Enviar Documentação',
+        variant: 'default',
+        Icon: Upload,
+        dialogTitle: 'Confirmar Envio de Documentação',
+        dialogDescription:
+          'Confirma o envio dos documentos solicitados pela Controladoria? Após confirmar, a ordem retornará para análise.',
+        observacaoLabel: 'Descreva os documentos enviados (opcional)',
+        observacaoMinChars: 0,
+        confirmLabel: 'Confirmar Envio',
         confirmVariant: 'default',
       },
     ],

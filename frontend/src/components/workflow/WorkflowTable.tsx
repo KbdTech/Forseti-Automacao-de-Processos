@@ -64,7 +64,7 @@ import {
   DEFAULT_PAGE_SIZE,
   DEBOUNCE_DELAY_MS,
 } from '@/utils/constants'
-import type { StatusOrdem, TipoOrdem, Prioridade } from '@/types/ordem'
+import type { Ordem, StatusOrdem, TipoOrdem, Prioridade } from '@/types/ordem'
 
 // ---------------------------------------------------------------------------
 // Hook de debounce (300ms — CLAUDE.md regra 12)
@@ -125,7 +125,7 @@ function TableSkeleton({ cols }: { cols: number }) {
   )
 }
 
-/** Badge colorido com o número de dias na etapa. */
+/** Badge colorido com o número de dias na etapa. Inclui tooltip nativo de SLA. */
 function DaysBadge({ days }: { days: number }) {
   const cls =
     days >= 5
@@ -135,7 +135,11 @@ function DaysBadge({ days }: { days: number }) {
         : 'bg-muted text-muted-foreground border-0 text-xs'
 
   return (
-    <Badge variant="outline" className={cls}>
+    <Badge
+      variant="outline"
+      className={cls}
+      title={`SLA: ${days} dia${days !== 1 ? 's' : ''} na etapa`}
+    >
       {days}d
     </Badge>
   )
@@ -158,6 +162,10 @@ interface WorkflowTableProps {
     status: StatusOrdem,
     onActionComplete: () => void,
   ) => React.ReactNode
+  /** Função que retorna className extra para a linha (ex.: borda urgente). */
+  rowClassName?: (ordem: Ordem) => string
+  /** Filtro client-side: exibe somente ordens com ≥ N dias na etapa. */
+  minDaysFilter?: number
 }
 
 // ---------------------------------------------------------------------------
@@ -169,6 +177,8 @@ export function WorkflowTable({
   emptyMessage,
   showSecretariaColumn = true,
   renderActions,
+  rowClassName,
+  minDaysFilter,
 }: WorkflowTableProps) {
   const [protocolo, setProtocolo] = useState('')
   const [secretariaId, setSecretariaId] = useState<string>('TODAS')
@@ -215,6 +225,12 @@ export function WorkflowTable({
     setSecretariaId(value)
     setPage(1)
   }
+
+  // Filtro client-side por dias na etapa (minDaysFilter)
+  const displayItems =
+    minDaysFilter != null && minDaysFilter > 0
+      ? (data?.items ?? []).filter((o) => getDaysInStage(o.updated_at) >= minDaysFilter)
+      : (data?.items ?? [])
 
   const totalPages = data?.pages ?? 1
   const from = data ? (page - 1) * DEFAULT_PAGE_SIZE + 1 : 0
@@ -292,23 +308,32 @@ export function WorkflowTable({
           <TableBody>
             {isLoading ? (
               <TableSkeleton cols={colCount} />
-            ) : !data?.items?.length ? (
+            ) : !displayItems.length ? (
               <TableRow>
                 <TableCell colSpan={colCount}>
                   <div className="flex flex-col items-center justify-center py-12 gap-3">
                     <FileText className="h-10 w-10 text-muted-foreground/40" />
                     <div className="text-center">
                       <p className="font-medium">Nenhuma ordem na fila</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">{emptyMessage}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {minDaysFilter && minDaysFilter > 0 && data?.items?.length
+                          ? `Nenhuma ordem com mais de ${minDaysFilter} dias nesta página.`
+                          : emptyMessage}
+                      </p>
                     </div>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              data.items.map((ordem) => (
+              displayItems.map((ordem) => (
                 <TableRow
                   key={ordem.id}
-                  className="cursor-pointer hover:bg-muted/40 transition-colors"
+                  className={[
+                    'cursor-pointer hover:bg-muted/40 transition-colors',
+                    rowClassName?.(ordem) ?? '',
+                  ]
+                    .join(' ')
+                    .trim()}
                   onClick={() => setSelectedId(ordem.id)}
                 >
                   {/* Protocolo */}

@@ -12,13 +12,14 @@
  *     /admin/usuarios         → UserManagementPage  [admin]
  *     /admin/secretarias      → DashboardPage*      [admin]
  *     /gabinete               → AnaliseGabinetePage [gabinete, admin]
- *     /controladoria          → DashboardPage*      [controladoria, admin]
+ *     /controladoria          → AnaliseControladoriaPage [controladoria, admin]
  *     /contabilidade/empenho  → DashboardPage*      [contabilidade, admin]
  *     /contabilidade/liquidacao→DashboardPage*      [contabilidade, admin]
  *     /tesouraria/pagamento   → DashboardPage*      [tesouraria, admin]
  *     /secretaria/ordens      → DashboardPage*      [secretaria, admin]
  *     /secretaria/nova-ordem  → DashboardPage*      [secretaria]
- *     /secretaria/devolvidas  → DashboardPage*      [secretaria, admin]
+ *     /secretaria/devolvidas  → DevolvidasPage       [secretaria, admin]
+ *     /secretaria/ordens/:id/editar → EditarOrdemPage [secretaria]
  *     /secretaria/atesto      → DashboardPage*      [secretaria, admin]
  *     /dashboard              → DashboardPage*      [gabinete, admin]
  *     /audit                  → DashboardPage*      [admin]
@@ -38,6 +39,9 @@ import UserManagementPage from '@/pages/admin/UserManagementPage'
 import NovaOrdemPage from '@/pages/secretaria/NovaOrdemPage'
 import MinhasOrdensPage from '@/pages/secretaria/MinhasOrdensPage'
 import AnaliseGabinetePage from '@/pages/gabinete/AnaliseGabinetePage'
+import AnaliseControladoriaPage from '@/pages/controladoria/AnaliseControladoriaPage'
+import DevolvidasPage from '@/pages/secretaria/DevolvidasPage'
+import EditarOrdemPage from '@/pages/secretaria/EditarOrdemPage'
 import AppLayout from '@/components/layout/AppLayout'
 import RoleGuard from '@/components/layout/RoleGuard'
 
@@ -127,7 +131,7 @@ export const router = createBrowserRouter([
         path: 'controladoria',
         element: (
           <Guard roles={['controladoria', 'admin']}>
-            <DashboardPage />
+            <AnaliseControladoriaPage />
           </Guard>
         ),
       },
@@ -181,7 +185,15 @@ export const router = createBrowserRouter([
         path: 'secretaria/devolvidas',
         element: (
           <Guard roles={['secretaria', 'admin']}>
-            <DashboardPage />
+            <DevolvidasPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'secretaria/ordens/:id/editar',
+        element: (
+          <Guard roles={['secretaria']}>
+            <EditarOrdemPage />
           </Guard>
         ),
       },
