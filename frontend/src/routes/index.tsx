@@ -35,6 +35,8 @@ import PrimeiroAcessoPage from '@/pages/auth/PrimeiroAcessoPage'
 import AccessDeniedPage from '@/pages/auth/AccessDeniedPage'
 import DashboardPage from '@/pages/DashboardPage'
 import UserManagementPage from '@/pages/admin/UserManagementPage'
+import NovaOrdemPage from '@/pages/secretaria/NovaOrdemPage'
+import MinhasOrdensPage from '@/pages/secretaria/MinhasOrdensPage'
 import AppLayout from '@/components/layout/AppLayout'
 import RoleGuard from '@/components/layout/RoleGuard'
 
@@ -162,7 +164,7 @@ export const router = createBrowserRouter([
         path: 'secretaria/ordens',
         element: (
           <Guard roles={['secretaria', 'admin']}>
-            <DashboardPage />
+            <MinhasOrdensPage />
           </Guard>
         ),
       },
@@ -170,7 +172,7 @@ export const router = createBrowserRouter([
         path: 'secretaria/nova-ordem',
         element: (
           <Guard roles={['secretaria']}>
-            <DashboardPage />
+            <NovaOrdemPage />
           </Guard>
         ),
       },
