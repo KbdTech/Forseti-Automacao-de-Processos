@@ -287,3 +287,227 @@ async def test_get_me_unauthenticated(client: AsyncClient) -> None:
     response = await client.get("/api/auth/me")
 
     assert response.status_code == 401
+
+
+# ===========================================================================
+# POST /api/auth/login — cenários adicionais
+# ===========================================================================
+
+
+async def test_login_inactive_account(client: AsyncClient) -> None:
+    """US-001 Cenário 5: conta desativada → 403 (não 401) — HTTP 403 Forbidden."""
+    with patch(
+        f"{AUTH}.authenticate",
+        new_callable=AsyncMock,
+        side_effect=HTTPException(
+            status_code=403,
+            detail="Conta desativada. Contate o administrador.",
+        ),
+    ):
+        response = await client.post(
+            "/api/auth/login",
+            json={"email": "inativo@prefeitura.gov.br", "password": "Senha123"},
+        )
+
+    assert response.status_code == 403
+    assert "desativada" in response.json()["detail"].lower()
+
+
+async def test_login_increments_and_blocks(
+    client: AsyncClient,
+    mock_db: AsyncMock,
+) -> None:
+    """US-001 RN-1: 5ª tentativa errada aciona bloqueio — locked_until é definido.
+
+    Usa o auth_service real com mock_db que retorna usuário com
+    login_attempts = MAX_LOGIN_ATTEMPTS - 1 (próxima falha bloqueia a conta).
+    """
+    from app.core.config import settings
+
+    user = MagicMock(spec=User)
+    user.id = uuid.uuid4()
+    user.email = "prestes.bloqueio@prefeitura.gov.br"
+    user.nome_completo = "Usuário Quase Bloqueado"
+    user.password_hash = hash_password("SenhaCorreta123")
+    user.role = RoleEnum.secretaria
+    user.is_active = True
+    user.first_login = False
+    user.login_attempts = settings.MAX_LOGIN_ATTEMPTS - 1  # próxima falha bloqueia
+    user.locked_until = None
+    user.secretaria_id = None
+    user.created_at = datetime.now(timezone.utc)
+    user.updated_at = datetime.now(timezone.utc)
+
+    make_db_mock(user, mock_db)
+
+    response = await client.post(
+        "/api/auth/login",
+        json={"email": "prestes.bloqueio@prefeitura.gov.br", "password": "SenhaErrada99"},
+    )
+
+    assert response.status_code == 423
+    assert user.locked_until is not None  # bloqueio foi aplicado pela service
+
+
+# ===========================================================================
+# POST /api/auth/logout
+# ===========================================================================
+
+
+async def test_logout_success(
+    client: AsyncClient,
+    admin_user: MagicMock,
+    admin_token: str,
+) -> None:
+    """US-001 Cenário 7: logout com token válido → 200 com mensagem de confirmação."""
+    app.dependency_overrides[get_current_user] = lambda: admin_user
+
+    try:
+        with patch(
+            f"{AUTH}.logout",
+            new_callable=AsyncMock,
+            return_value={"detail": "Logout realizado com sucesso."},
+        ):
+            response = await client.post(
+                "/api/auth/logout",
+                headers={"Authorization": f"Bearer {admin_token}"},
+            )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    assert "sucesso" in response.json()["detail"].lower()
+
+
+async def test_logout_unauthenticated(client: AsyncClient) -> None:
+    """POST /api/auth/logout sem token → 401."""
+    response = await client.post("/api/auth/logout")
+
+    assert response.status_code == 401
+
+
+# ===========================================================================
+# POST /api/auth/change-password
+# ===========================================================================
+
+
+async def test_change_password_success(
+    client: AsyncClient,
+    admin_user: MagicMock,
+    admin_token: str,
+) -> None:
+    """Troca de senha com dados válidos → 200 com mensagem de confirmação."""
+    app.dependency_overrides[get_current_user] = lambda: admin_user
+
+    try:
+        with patch(
+            f"{AUTH}.change_password",
+            new_callable=AsyncMock,
+            return_value={"detail": "Senha alterada com sucesso."},
+        ):
+            response = await client.post(
+                "/api/auth/change-password",
+                headers={"Authorization": f"Bearer {admin_token}"},
+                json={
+                    "old_password": "Admin123",
+                    "new_password": "NovaSenha456",
+                    "confirm_password": "NovaSenha456",
+                },
+            )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200
+    assert "sucesso" in response.json()["detail"].lower()
+
+
+async def test_change_password_wrong_old_password(
+    client: AsyncClient,
+    admin_user: MagicMock,
+    admin_token: str,
+) -> None:
+    """Troca de senha com senha atual incorreta → 400."""
+    app.dependency_overrides[get_current_user] = lambda: admin_user
+
+    try:
+        with patch(
+            f"{AUTH}.change_password",
+            new_callable=AsyncMock,
+            side_effect=HTTPException(status_code=400, detail="Senha atual incorreta."),
+        ):
+            response = await client.post(
+                "/api/auth/change-password",
+                headers={"Authorization": f"Bearer {admin_token}"},
+                json={
+                    "old_password": "SenhaErrada",
+                    "new_password": "NovaSenha456",
+                    "confirm_password": "NovaSenha456",
+                },
+            )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 400
+    assert "incorreta" in response.json()["detail"].lower()
+
+
+async def test_change_password_unauthenticated(client: AsyncClient) -> None:
+    """POST /api/auth/change-password sem token → 401."""
+    response = await client.post(
+        "/api/auth/change-password",
+        json={
+            "old_password": "Admin123",
+            "new_password": "NovaSenha456",
+            "confirm_password": "NovaSenha456",
+        },
+    )
+
+    assert response.status_code == 401
+
+
+async def test_change_password_weak_password(
+    client: AsyncClient,
+    admin_user: MagicMock,
+    admin_token: str,
+) -> None:
+    """US-001 RN-4: nova senha sem números → 422 (validação Pydantic)."""
+    app.dependency_overrides[get_current_user] = lambda: admin_user
+
+    try:
+        response = await client.post(
+            "/api/auth/change-password",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "old_password": "Admin123",
+                "new_password": "SenhaSemNumeros",    # sem dígitos — inválida
+                "confirm_password": "SenhaSemNumeros",
+            },
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 422
+
+
+async def test_change_password_mismatch(
+    client: AsyncClient,
+    admin_user: MagicMock,
+    admin_token: str,
+) -> None:
+    """new_password ≠ confirm_password → 422 (validação Pydantic)."""
+    app.dependency_overrides[get_current_user] = lambda: admin_user
+
+    try:
+        response = await client.post(
+            "/api/auth/change-password",
+            headers={"Authorization": f"Bearer {admin_token}"},
+            json={
+                "old_password": "Admin123",
+                "new_password": "NovaSenha456",
+                "confirm_password": "SenhaDiferente789",   # não confere
+            },
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 422
