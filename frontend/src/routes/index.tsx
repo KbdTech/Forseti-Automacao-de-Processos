@@ -13,7 +13,7 @@
  *     /admin/secretarias      → DashboardPage*      [admin]
  *     /gabinete               → AnaliseGabinetePage [gabinete, admin]
  *     /controladoria          → AnaliseControladoriaPage [controladoria, admin]
- *     /contabilidade/empenho  → DashboardPage*      [contabilidade, admin]
+ *     /contabilidade/empenho  → EmpenhoPage          [contabilidade, admin]
  *     /contabilidade/liquidacao→DashboardPage*      [contabilidade, admin]
  *     /tesouraria/pagamento   → DashboardPage*      [tesouraria, admin]
  *     /secretaria/ordens      → DashboardPage*      [secretaria, admin]
@@ -40,6 +40,7 @@ import NovaOrdemPage from '@/pages/secretaria/NovaOrdemPage'
 import MinhasOrdensPage from '@/pages/secretaria/MinhasOrdensPage'
 import AnaliseGabinetePage from '@/pages/gabinete/AnaliseGabinetePage'
 import AnaliseControladoriaPage from '@/pages/controladoria/AnaliseControladoriaPage'
+import EmpenhoPage from '@/pages/contabilidade/EmpenhoPage'
 import DevolvidasPage from '@/pages/secretaria/DevolvidasPage'
 import EditarOrdemPage from '@/pages/secretaria/EditarOrdemPage'
 import AppLayout from '@/components/layout/AppLayout'
@@ -141,7 +142,7 @@ export const router = createBrowserRouter([
         path: 'contabilidade/empenho',
         element: (
           <Guard roles={['contabilidade', 'admin']}>
-            <DashboardPage />
+            <EmpenhoPage />
           </Guard>
         ),
       },

@@ -212,6 +212,7 @@ async def update_ordem(
     responses={
         403: {"description": "Perfil sem permissão para esta ação"},
         404: {"description": "Ordem não encontrada"},
+        409: {"description": "Conflito — ex.: numero_empenho já vinculado a outra ordem"},
         422: {"description": "Ação inválida para o status atual ou dados obrigatórios ausentes"},
     },
 )

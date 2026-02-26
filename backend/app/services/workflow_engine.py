@@ -344,6 +344,22 @@ class WorkflowEngine:
             ordem.versao = (ordem.versao or 0) + 1
 
         elif acao == "empenhar":
+            # US-008 RN-42: numero_empenho deve ser único no sistema
+            numero_empenho = str((dados_extras or {}).get("numero_empenho", "")).strip()
+            if numero_empenho:
+                dup_result = await db.execute(
+                    select(Ordem).where(
+                        Ordem.numero_empenho == numero_empenho,
+                        Ordem.id != ordem_id,
+                    )
+                )
+                if dup_result.scalar_one_or_none() is not None:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=(
+                            f"Número de empenho '{numero_empenho}' já vinculado a outra ordem."
+                        ),
+                    )
             # US-008 RN-43: data_empenho registrada no momento do empenho
             ordem.data_empenho = datetime.now(timezone.utc)
 
