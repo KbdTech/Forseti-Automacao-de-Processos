@@ -1,4 +1,6 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from collections.abc import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import settings
@@ -17,9 +19,22 @@ AsyncSessionLocal = async_sessionmaker(
 
 
 class Base(DeclarativeBase):
+    """Classe base para todos os models SQLAlchemy do projeto."""
+
     pass
 
 
-async def get_db():
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    """Dependency do FastAPI que fornece uma sessão de banco de dados async.
+
+    Garante que a sessão seja fechada corretamente após cada request,
+    mesmo em caso de exceção.
+
+    Yields:
+        AsyncSession: sessão ativa do banco de dados.
+    """
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()

@@ -2,12 +2,26 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Configurações globais da aplicação carregadas do arquivo .env."""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
+    # Banco de dados
     DATABASE_URL: str
+
+    # Supabase
     SUPABASE_URL: str
     SUPABASE_ANON_KEY: str
     SUPABASE_SERVICE_ROLE_KEY: str
+
+    # JWT
+    JWT_SECRET_KEY: str
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_HOURS: int = 8
+    JWT_REFRESH_EXPIRATION_HOURS: int = 24
+
+    # CORS
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
 
 settings = Settings()
