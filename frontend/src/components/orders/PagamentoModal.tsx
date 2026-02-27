@@ -21,8 +21,6 @@
 import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle, AlertTriangle, Loader2 } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
 
@@ -64,14 +62,6 @@ function todayISODate(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-function formatDateBR(isoStr: string | null | undefined): string {
-  if (!isoStr) return '—'
-  try {
-    return format(parseISO(isoStr), 'dd/MM/yyyy', { locale: ptBR })
-  } catch {
-    return isoStr
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Props

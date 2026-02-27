@@ -67,7 +67,7 @@ import {
   DEFAULT_PAGE_SIZE,
   DEBOUNCE_DELAY_MS,
 } from '@/utils/constants'
-import type { Ordem, StatusOrdem, TipoOrdem, Prioridade } from '@/types/ordem'
+import type { Ordem, TipoOrdem, Prioridade } from '@/types/ordem'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -138,11 +138,9 @@ function DaysBadge({ days }: { days: number }) {
     <div className="flex items-center justify-center gap-1">
       {/* Ícone Clock amarelo para ordens ≥ 5 dias — US-007 indicador visual */}
       {days >= 5 && (
-        <Clock
-          className="h-3.5 w-3.5 text-yellow-500 shrink-0"
-          title={slaTooltip}
-          aria-label={slaTooltip}
-        />
+        <span title={slaTooltip}>
+          <Clock className="h-3.5 w-3.5 text-yellow-500 shrink-0" aria-label={slaTooltip} />
+        </span>
       )}
       <Badge variant="outline" className={badgeCls} title={slaTooltip}>
         {days}d

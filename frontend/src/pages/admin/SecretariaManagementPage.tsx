@@ -88,20 +88,24 @@ const secretariaSchema = z.object({
   sigla: z
     .string()
     .min(2, 'Mínimo 2 caracteres.')
-    .max(5, 'Máximo 5 caracteres.')
-    .transform((v) => v.toUpperCase()),
+    .max(5, 'Máximo 5 caracteres.'),
   orcamento_anual: z
     .string()
     .optional()
-    .transform((v) => {
-      if (!v || v.trim() === '') return null
+    .refine((v) => {
+      if (!v || v.trim() === '') return true
       const n = parseFloat(v.replace(',', '.'))
-      return isNaN(n) ? null : n
-    })
-    .refine((v) => v === null || v > 0, 'Orçamento deve ser um valor positivo.'),
+      return !isNaN(n) && n > 0
+    }, 'Orçamento deve ser um número positivo.'),
 })
 
 type SecretariaFormData = z.infer<typeof secretariaSchema>
+
+function parseOrcamento(raw: string | undefined): number | null {
+  if (!raw || raw.trim() === '') return null
+  const n = parseFloat(raw.replace(',', '.'))
+  return isNaN(n) ? null : n
+}
 
 // ---------------------------------------------------------------------------
 // Dialog — Criar / Editar Secretaria
@@ -136,20 +140,17 @@ function SecretariaDialog({ target, open, onOpenChange, onSuccess }: SecretariaD
   })
 
   async function onSubmit(data: SecretariaFormData) {
+    const payload = {
+      nome: data.nome,
+      sigla: data.sigla.toUpperCase(),
+      orcamento_anual: parseOrcamento(data.orcamento_anual),
+    }
     try {
       if (isEdit) {
-        await updateSecretaria(target.id, {
-          nome: data.nome,
-          sigla: data.sigla,
-          orcamento_anual: data.orcamento_anual,
-        })
+        await updateSecretaria(target.id, payload)
         toast.success('Secretaria atualizada com sucesso.')
       } else {
-        await createSecretaria({
-          nome: data.nome,
-          sigla: data.sigla,
-          orcamento_anual: data.orcamento_anual,
-        })
+        await createSecretaria(payload)
         toast.success('Secretaria criada com sucesso.')
       }
       reset()

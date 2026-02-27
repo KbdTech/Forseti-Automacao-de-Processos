@@ -18,7 +18,7 @@
  */
 
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -603,18 +603,6 @@ export default function UserManagementPage() {
     void queryClient.invalidateQueries({ queryKey: ['users'] })
   }
 
-  // Mutation de toggle is_active (atalho da tabela)
-  const toggleActive = useMutation({
-    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
-      updateUser(id, { is_active }),
-    onSuccess: (updated) => {
-      toast.success(
-        `Usuário ${updated.is_active ? 'ativado' : 'desativado'} com sucesso.`,
-      )
-      invalidate()
-    },
-    onError: (error) => toast.error(extractError(error)),
-  })
 
   return (
     <div className="space-y-6">
