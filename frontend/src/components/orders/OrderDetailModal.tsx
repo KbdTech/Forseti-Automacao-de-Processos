@@ -301,7 +301,7 @@ export function OrderDetailModal({ orderId, onClose, renderActions }: OrderDetai
 
   return (
     <Dialog open={orderId !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col" showCloseButton={false}>
         <DialogHeader className="flex flex-row items-start justify-between gap-4 pr-0">
           <div className="flex-1 min-w-0">
             <DialogTitle className="text-base font-mono">
