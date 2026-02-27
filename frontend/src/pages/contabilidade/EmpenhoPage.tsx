@@ -70,7 +70,7 @@ function EmpenhoActionPanel({
 // ---------------------------------------------------------------------------
 
 function rowClassName(ordem: Ordem): string {
-  return ordem.prioridade === 'URGENTE' ? 'border-l-4 border-l-red-500' : ''
+  return ordem.prioridade === 'urgente' ? 'border-l-4 border-l-red-500' : ''
 }
 
 // ---------------------------------------------------------------------------

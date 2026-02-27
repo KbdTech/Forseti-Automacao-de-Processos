@@ -81,7 +81,7 @@ export default function AnaliseGabinetePage() {
   // KPIs derivados dos dados
   const totalAguardando = kpiData?.total ?? 0
   const urgentes =
-    kpiData?.items.filter((o) => o.prioridade === 'URGENTE').length ?? 0
+    kpiData?.items.filter((o) => o.prioridade === 'urgente').length ?? 0
   const maisDe5Dias =
     kpiData?.items.filter((o) => getDaysInStage(o.updated_at) >= 5).length ?? 0
 

@@ -87,10 +87,10 @@ import type { OrdemHistorico, TipoOrdem, Prioridade } from '@/types/ordem'
 // ---------------------------------------------------------------------------
 
 const etapa1Schema = z.object({
-  tipo: z.enum(['COMPRA', 'SERVICO', 'OBRA'], {
+  tipo: z.enum(['compra', 'servico', 'obra'], {
     required_error: 'Selecione o tipo de ordem.',
   }),
-  prioridade: z.enum(['NORMAL', 'ALTA', 'URGENTE'], {
+  prioridade: z.enum(['normal', 'alta', 'urgente'], {
     required_error: 'Selecione a prioridade.',
   }),
   responsavel: z.string().max(255).optional(),

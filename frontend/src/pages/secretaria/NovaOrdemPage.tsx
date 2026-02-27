@@ -83,10 +83,10 @@ import type { TipoOrdem, Prioridade, Ordem } from '@/types/ordem'
 // ---------------------------------------------------------------------------
 
 const etapa1Schema = z.object({
-  tipo: z.enum(['COMPRA', 'SERVICO', 'OBRA'], {
+  tipo: z.enum(['compra', 'servico', 'obra'], {
     required_error: 'Selecione o tipo de ordem.',
   }),
-  prioridade: z.enum(['NORMAL', 'ALTA', 'URGENTE'], {
+  prioridade: z.enum(['normal', 'alta', 'urgente'], {
     required_error: 'Selecione a prioridade.',
   }),
   responsavel: z.string().max(255).optional(),
@@ -449,7 +449,7 @@ export default function NovaOrdemPage() {
                   render={({ field }) => (
                     <Select
                       onValueChange={(v) => field.onChange(v as TipoOrdem)}
-                      value={field.value}
+                      value={field.value ?? ''}
                     >
                       <SelectTrigger
                         id="tipo"
@@ -484,7 +484,7 @@ export default function NovaOrdemPage() {
                   render={({ field }) => (
                     <Select
                       onValueChange={(v) => field.onChange(v as Prioridade)}
-                      value={field.value}
+                      value={field.value ?? ''}
                     >
                       <SelectTrigger
                         id="prioridade"

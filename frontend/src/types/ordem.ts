@@ -8,11 +8,11 @@
 // Enums
 // ---------------------------------------------------------------------------
 
-/** US-003 RN-16: tipo de ordem obrigatório. */
-export type TipoOrdem = 'COMPRA' | 'SERVICO' | 'OBRA'
+/** US-003 RN-16: tipo de ordem obrigatório. Sincronizado com TipoLiteral do back-end. */
+export type TipoOrdem = 'compra' | 'servico' | 'obra'
 
-/** US-003 RN-17: prioridade obrigatória. */
-export type Prioridade = 'NORMAL' | 'ALTA' | 'URGENTE'
+/** US-003 RN-17: prioridade obrigatória. Sincronizado com PrioridadeLiteral do back-end. */
+export type Prioridade = 'normal' | 'alta' | 'urgente'
 
 /**
  * US-003 RN-20 e seção 6 do CLAUDE.md: máquina de estados das ordens.

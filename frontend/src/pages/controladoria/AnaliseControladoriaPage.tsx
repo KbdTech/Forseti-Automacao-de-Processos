@@ -182,7 +182,7 @@ function KpiCard({ label, value, icon, colorClass, isLoading }: KpiCardProps) {
 /** Linha da tabela com indicadores visuais de urgência e status. */
 function OrdemRow({ ordem, onClick }: { ordem: Ordem; onClick: () => void }) {
   const days = getDaysInStage(ordem.updated_at)
-  const isUrgente = ordem.prioridade === 'URGENTE'
+  const isUrgente = ordem.prioridade === 'urgente'
   const isAguardandoDocs = ordem.status === 'AGUARDANDO_DOCUMENTACAO'
 
   return (

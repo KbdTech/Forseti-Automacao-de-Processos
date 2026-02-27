@@ -108,9 +108,9 @@ export const STATUS_CONFIG: Record<
 // ---------------------------------------------------------------------------
 
 export const TIPO_ORDEM_LABELS: Record<TipoOrdem, string> = {
-  COMPRA: 'Compra',
-  SERVICO: 'Serviço',
-  OBRA: 'Obra',
+  compra: 'Compra',
+  servico: 'Serviço',
+  obra: 'Obra',
 }
 
 // ---------------------------------------------------------------------------
@@ -118,18 +118,18 @@ export const TIPO_ORDEM_LABELS: Record<TipoOrdem, string> = {
 // ---------------------------------------------------------------------------
 
 export const PRIORIDADE_LABELS: Record<Prioridade, string> = {
-  NORMAL: 'Normal',
-  ALTA: 'Alta',
-  URGENTE: 'Urgente',
+  normal: 'Normal',
+  alta: 'Alta',
+  urgente: 'Urgente',
 }
 
 export const PRIORIDADE_CONFIG: Record<
   Prioridade,
   { label: string; bg: string; text: string }
 > = {
-  NORMAL: { label: 'Normal', bg: 'bg-gray-100', text: 'text-gray-600' },
-  ALTA: { label: 'Alta', bg: 'bg-orange-50', text: 'text-orange-600' },
-  URGENTE: { label: 'Urgente', bg: 'bg-red-50', text: 'text-red-600' },
+  normal: { label: 'Normal', bg: 'bg-gray-100', text: 'text-gray-600' },
+  alta: { label: 'Alta', bg: 'bg-orange-50', text: 'text-orange-600' },
+  urgente: { label: 'Urgente', bg: 'bg-red-50', text: 'text-red-600' },
 }
 
 // ---------------------------------------------------------------------------
