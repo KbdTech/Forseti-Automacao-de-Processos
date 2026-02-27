@@ -398,7 +398,9 @@ async def test_empenhar_sets_data_empenho() -> None:
 
 
 async def test_atestar_sets_data_atesto_and_atestado_por() -> None:
-    """US-009 RN-48/46: 'atestar' define data_atesto e atestado_por automaticamente."""
+    """US-009 RN-48/46/49: 'atestar' define data_atesto e atestado_por automaticamente.
+    US-009 RN-49: numero_nf é obrigatório para concluir o atesto.
+    """
     secretaria_id = uuid.uuid4()
     ordem = make_ordem(StatusOrdemEnum.AGUARDANDO_ATESTO, secretaria_id=secretaria_id)
     db = make_db(ordem)
@@ -412,6 +414,7 @@ async def test_atestar_sets_data_atesto_and_atestado_por() -> None:
         user=user,
         observacao=None,
         ip_address=None,
+        dados_extras={"numero_nf": "NF-2026-001"},  # US-009 RN-49: obrigatório
     )
 
     assert ordem.data_atesto is not None
@@ -425,10 +428,25 @@ async def test_atestar_sets_data_atesto_and_atestado_por() -> None:
 
 
 async def test_dados_extras_applied_to_ordem() -> None:
-    """Campos em dados_extras são aplicados via setattr à ordem."""
+    """Campos em dados_extras são aplicados via setattr à ordem.
+
+    empenhar faz 2 queries: (1) busca a ordem, (2) checa unicidade do numero_empenho.
+    O mock é configurado com side_effect para retornar valores distintos.
+    """
     ordem = make_ordem(StatusOrdemEnum.AGUARDANDO_EMPENHO)
-    db = make_db(ordem)
     user = make_user(RoleEnum.contabilidade)
+
+    # Query 1 → retorna a ordem; Query 2 (unicidade) → retorna None (sem duplicata)
+    scalar_ordem = MagicMock()
+    scalar_ordem.scalar_one_or_none.return_value = ordem
+    scalar_sem_duplicata = MagicMock()
+    scalar_sem_duplicata.scalar_one_or_none.return_value = None
+
+    db = AsyncMock()
+    db.execute = AsyncMock(side_effect=[scalar_ordem, scalar_sem_duplicata])
+    db.add = MagicMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
 
     dados = {
         "numero_empenho": "EMP-2026-001",
@@ -450,7 +468,11 @@ async def test_dados_extras_applied_to_ordem() -> None:
 
 
 async def test_dados_extras_unknown_field_ignored() -> None:
-    """Campo desconhecido em dados_extras não gera erro (hasattr guard)."""
+    """Campo desconhecido em dados_extras não gera erro (hasattr guard).
+
+    empenhar sem numero_empenho (campo ausente) não faz query de unicidade.
+    AGUARDANDO_EMPENHO → empenhar → AGUARDANDO_ATESTO (US-009 fluxo direto).
+    """
     ordem = make_ordem(StatusOrdemEnum.AGUARDANDO_EMPENHO)
     db = make_db(ordem)
     user = make_user(RoleEnum.contabilidade)
@@ -466,7 +488,8 @@ async def test_dados_extras_unknown_field_ignored() -> None:
         dados_extras={"campo_inexistente": "valor"},
     )
 
-    assert ordem.status == StatusOrdemEnum.AGUARDANDO_EXECUCAO
+    # empenhar vai direto para AGUARDANDO_ATESTO (AGUARDANDO_EXECUCAO é via iniciar_atesto)
+    assert ordem.status == StatusOrdemEnum.AGUARDANDO_ATESTO
 
 
 # ---------------------------------------------------------------------------
