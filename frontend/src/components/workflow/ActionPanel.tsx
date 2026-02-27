@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import { executeAcao } from '@/services/ordensService'
+import { extractApiError } from '@/utils/formatters'
 import type { StatusOrdem } from '@/types/ordem'
 import type { RoleEnum } from '@/types/auth.types'
 
@@ -246,8 +247,8 @@ export function ActionPanel({
       setObservacao('')
       onActionComplete()
     },
-    onError: (error: AxiosError<{ detail: string }>) => {
-      const msg = error.response?.data?.detail ?? 'Erro ao executar ação. Tente novamente.'
+    onError: (error: AxiosError<{ detail: unknown }>) => {
+      const msg = extractApiError(error.response?.data?.detail, 'Erro ao executar ação. Tente novamente.')
       toast.error('Erro na ação', { description: msg })
     },
   })

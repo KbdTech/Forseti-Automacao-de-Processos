@@ -1,11 +1,12 @@
 """Script de seed — cria dados iniciais para desenvolvimento.
 
 Cria:
-  - 3 secretarias: Educação (EDU), Saúde (SAU), Obras (OBR)
+  - 4 secretarias: Educação (EDU), Saúde (SAU), Obras (OBR), SAAE (SAAE)
   - 1 admin:          admin@prefeitura.gov.br / Admin123!
   - 1 secretaria/EDU: sec.edu@prefeitura.gov.br
   - 1 secretaria/SAU: sec.sau@prefeitura.gov.br
   - 1 secretaria/OBR: sec.obr@prefeitura.gov.br
+  - 1 secretaria/SAAE: sec.saae@prefeitura.gov.br
   - 1 gabinete:       gabinete@prefeitura.gov.br
   - 1 controladoria:  controladoria@prefeitura.gov.br
   - 1 contabilidade:  contabilidade@prefeitura.gov.br
@@ -44,9 +45,10 @@ from app.models.user import RoleEnum, User  # noqa: E402
 # ---------------------------------------------------------------------------
 
 SECRETARIAS = [
-    {"nome": "Secretaria Municipal de Educação", "sigla": "EDU", "orcamento_anual": Decimal("1200000.00")},
-    {"nome": "Secretaria Municipal de Saúde",    "sigla": "SAU", "orcamento_anual": Decimal("2500000.00")},
-    {"nome": "Secretaria Municipal de Obras",    "sigla": "OBR", "orcamento_anual": Decimal("800000.00")},
+    {"nome": "Secretaria Municipal de Educação",              "sigla": "EDU",  "orcamento_anual": Decimal("1200000.00")},
+    {"nome": "Secretaria Municipal de Saúde",                 "sigla": "SAU",  "orcamento_anual": Decimal("2500000.00")},
+    {"nome": "Secretaria Municipal de Obras",                 "sigla": "OBR",  "orcamento_anual": Decimal("800000.00")},
+    {"nome": "Serviço Autônomo de Água e Esgoto",             "sigla": "SAAE", "orcamento_anual": Decimal("1500000.00")},
 ]
 
 SENHA_PADRAO = "Senha123!"
@@ -63,9 +65,10 @@ USUARIOS_GLOBAIS = [
 
 # Usuários de secretaria — vinculados pela sigla
 USUARIOS_SECRETARIA = [
-    {"email": "sec.edu@prefeitura.gov.br", "nome": "Servidor — Secretaria de Educação", "sigla": "EDU"},
-    {"email": "sec.sau@prefeitura.gov.br", "nome": "Servidor — Secretaria de Saúde",    "sigla": "SAU"},
-    {"email": "sec.obr@prefeitura.gov.br", "nome": "Servidor — Secretaria de Obras",    "sigla": "OBR"},
+    {"email": "sec.edu@prefeitura.gov.br",  "nome": "Servidor — Secretaria de Educação", "sigla": "EDU"},
+    {"email": "sec.sau@prefeitura.gov.br",  "nome": "Servidor — Secretaria de Saúde",    "sigla": "SAU"},
+    {"email": "sec.obr@prefeitura.gov.br",  "nome": "Servidor — Secretaria de Obras",    "sigla": "OBR"},
+    {"email": "sec.saae@prefeitura.gov.br", "nome": "Servidor — SAAE",                   "sigla": "SAAE"},
 ]
 
 
@@ -178,9 +181,10 @@ async def seed() -> None:
         print("\n✅ Seed concluído!")
         print("\nCredenciais de acesso:")
         print(f"  Admin:          admin@prefeitura.gov.br  /  {SENHA_ADMIN}")
-        print(f"  Secretaria EDU: sec.edu@prefeitura.gov.br / {SENHA_PADRAO}")
-        print(f"  Secretaria SAU: sec.sau@prefeitura.gov.br / {SENHA_PADRAO}")
-        print(f"  Secretaria OBR: sec.obr@prefeitura.gov.br / {SENHA_PADRAO}")
+        print(f"  Secretaria EDU:  sec.edu@prefeitura.gov.br  / {SENHA_PADRAO}")
+        print(f"  Secretaria SAU:  sec.sau@prefeitura.gov.br  / {SENHA_PADRAO}")
+        print(f"  Secretaria OBR:  sec.obr@prefeitura.gov.br  / {SENHA_PADRAO}")
+        print(f"  Secretaria SAAE: sec.saae@prefeitura.gov.br / {SENHA_PADRAO}")
         print(f"  Gabinete:       gabinete@prefeitura.gov.br / {SENHA_PADRAO}")
         print(f"  Controladoria:  controladoria@prefeitura.gov.br / {SENHA_PADRAO}")
         print(f"  Contabilidade:  contabilidade@prefeitura.gov.br / {SENHA_PADRAO}")

@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { getOrdem, executeAcao } from '@/services/ordensService'
+import { extractApiError } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -122,11 +123,9 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
       onSuccess()
       handleClose()
     },
-    onError: (error: AxiosError<{ detail: string }>) => {
-      const detail = error.response?.data?.detail
-      toast.error('Erro ao registrar liquidação', {
-        description: detail ?? 'Tente novamente.',
-      })
+    onError: (error: AxiosError<{ detail: unknown }>) => {
+      const msg = extractApiError(error.response?.data?.detail, 'Tente novamente.')
+      toast.error('Erro ao registrar liquidação', { description: msg })
     },
   })
 

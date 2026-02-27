@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { executeAcao } from '@/services/ordensService'
+import { extractApiError } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Constantes
@@ -90,11 +91,9 @@ export function RecusaModal({ orderId, onClose, onSuccess }: RecusaModalProps) {
       onSuccess()
       handleClose()
     },
-    onError: (error: AxiosError<{ detail: string }>) => {
-      const detail = error.response?.data?.detail
-      toast.error('Erro ao recusar atesto', {
-        description: detail ?? 'Tente novamente.',
-      })
+    onError: (error: AxiosError<{ detail: unknown }>) => {
+      const msg = extractApiError(error.response?.data?.detail, 'Tente novamente.')
+      toast.error('Erro ao recusar atesto', { description: msg })
     },
   })
 

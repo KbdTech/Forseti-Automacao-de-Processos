@@ -49,6 +49,7 @@ import {
 
 import { getOrdem, executeAcao } from '@/services/ordensService'
 import type { AcaoPayload } from '@/types/ordem'
+import { extractApiError } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -162,11 +163,9 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
       onSuccess()
       handleClose()
     },
-    onError: (error: AxiosError<{ detail: string }>) => {
-      const detail = error.response?.data?.detail
-      toast.error('Erro ao registrar pagamento', {
-        description: detail ?? 'Tente novamente.',
-      })
+    onError: (error: AxiosError<{ detail: unknown }>) => {
+      const msg = extractApiError(error.response?.data?.detail, 'Tente novamente.')
+      toast.error('Erro ao registrar pagamento', { description: msg })
     },
   })
 

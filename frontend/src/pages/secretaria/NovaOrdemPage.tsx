@@ -75,6 +75,7 @@ import {
   PRIORIDADE_CONFIG,
   JUSTIFICATIVA_MIN_LENGTH,
 } from '@/utils/constants'
+import { extractApiError } from '@/utils/formatters'
 import type { TipoOrdem, Prioridade, Ordem } from '@/types/ordem'
 
 // ---------------------------------------------------------------------------
@@ -311,9 +312,9 @@ export default function NovaOrdemPage() {
         description: `Protocolo: ${ordem.protocolo}`,
       })
     },
-    onError: (error: AxiosError<{ detail: string }>) => {
+    onError: (error: AxiosError<{ detail: unknown }>) => {
       setConfirmOpen(false)
-      const msg = error.response?.data?.detail ?? 'Erro ao criar ordem. Tente novamente.'
+      const msg = extractApiError(error.response?.data?.detail, 'Erro ao criar ordem. Tente novamente.')
       toast.error('Erro ao criar ordem', { description: msg })
     },
   })

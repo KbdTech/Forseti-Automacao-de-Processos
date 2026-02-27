@@ -73,6 +73,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 import { getOrdem, updateOrdem, executeAcao } from '@/services/ordensService'
 import { listSecretarias } from '@/services/secretariasService'
+import { extractApiError } from '@/utils/formatters'
 import {
   TIPO_ORDEM_LABELS,
   PRIORIDADE_LABELS,
@@ -286,9 +287,9 @@ export default function EditarOrdemPage() {
       setConfirmOpen(false)
       navigate('/secretaria/devolvidas')
     },
-    onError: (error: AxiosError<{ detail: string }>) => {
+    onError: (error: AxiosError<{ detail: unknown }>) => {
       setConfirmOpen(false)
-      const msg = error.response?.data?.detail ?? 'Erro ao reenviar a ordem. Tente novamente.'
+      const msg = extractApiError(error.response?.data?.detail, 'Erro ao reenviar a ordem. Tente novamente.')
       toast.error('Erro ao reenviar', { description: msg })
     },
   })
