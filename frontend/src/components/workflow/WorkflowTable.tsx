@@ -285,24 +285,24 @@ export function WorkflowTable({
       )}
 
       {/* Tabela */}
-      <div className="rounded-lg border">
-        <Table>
+      <div className="rounded-lg border overflow-x-auto">
+        <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>
-              <TableHead className="font-semibold">Protocolo</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Protocolo</TableHead>
               {showSecretariaColumn && (
-                <TableHead className="font-semibold">Secretaria</TableHead>
+                <TableHead className="font-semibold max-w-[180px]">Secretaria</TableHead>
               )}
               <TableHead className="font-semibold text-center w-8" title="Assinatura GovBR">
                 <ShieldCheck className="h-4 w-4 mx-auto text-muted-foreground" />
               </TableHead>
-              <TableHead className="font-semibold">Tipo</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Tipo</TableHead>
               <TableHead className="font-semibold">Descrição</TableHead>
-              <TableHead className="font-semibold text-right">Valor Est.</TableHead>
-              <TableHead className="font-semibold">Prioridade</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Criado em</TableHead>
-              <TableHead className="font-semibold text-center">
+              <TableHead className="font-semibold text-right whitespace-nowrap">Valor Est.</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Prioridade</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Status</TableHead>
+              <TableHead className="font-semibold whitespace-nowrap">Criado em</TableHead>
+              <TableHead className="font-semibold text-center whitespace-nowrap">
                 <span className="flex items-center justify-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
                   Dias
@@ -348,7 +348,9 @@ export function WorkflowTable({
 
                   {/* Secretaria */}
                   {showSecretariaColumn && (
-                    <TableCell className="text-sm">{ordem.secretaria_nome}</TableCell>
+                    <TableCell className="text-sm max-w-[180px] truncate" title={ordem.secretaria_nome}>
+                      {ordem.secretaria_nome}
+                    </TableCell>
                   )}
 
                   {/* Assinatura GovBR — US-016 */}
@@ -362,13 +364,13 @@ export function WorkflowTable({
                   </TableCell>
 
                   {/* Tipo */}
-                  <TableCell className="text-sm">
+                  <TableCell className="text-sm whitespace-nowrap">
                     {TIPO_ORDEM_LABELS[ordem.tipo as TipoOrdem] ?? ordem.tipo}
                   </TableCell>
 
                   {/* Descrição */}
-                  <TableCell className="text-sm text-muted-foreground max-w-[160px]">
-                    {truncate(ordem.descricao, 45)}
+                  <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate" title={ordem.descricao ?? undefined}>
+                    {truncate(ordem.descricao, 40)}
                   </TableCell>
 
                   {/* Valor */}
