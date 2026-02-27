@@ -9,9 +9,10 @@
  * US-012 RN-61: campos completos de auditoria.
  */
 
+import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { X, CheckCircle, RotateCcw, XCircle, FileText, Clock, AlertTriangle } from 'lucide-react'
+import { X, CheckCircle, RotateCcw, XCircle, FileText, Clock, AlertTriangle, ChevronDown } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 
 import {
@@ -32,6 +33,7 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { StatusBadge } from '@/components/workflow/StatusBadge'
+import { cn } from '@/lib/utils'
 import { getOrdem } from '@/services/ordensService'
 import { TIPO_ORDEM_LABELS, PRIORIDADE_CONFIG, PRIORIDADE_LABELS } from '@/utils/constants'
 import type { TipoOrdem, Prioridade, OrdemHistorico, StatusOrdem } from '@/types/ordem'
@@ -144,16 +146,18 @@ function DetailSkeleton() {
 
 function HistoricoEntry({ entry }: { entry: OrdemHistorico }) {
   const { Icon, color } = getAcaoIcon(entry.acao)
+  // US-012: observação expansível — clique para mostrar/ocultar
+  const [expanded, setExpanded] = useState(false)
 
   return (
     <div className="flex gap-3">
       {/* Ícone */}
       <div className="flex flex-col items-center">
         <div
-          className={[
+          className={cn(
             'flex h-8 w-8 items-center justify-center rounded-full bg-muted flex-shrink-0',
             color,
-          ].join(' ')}
+          )}
         >
           <Icon className="h-4 w-4" />
         </div>
@@ -174,10 +178,27 @@ function HistoricoEntry({ entry }: { entry: OrdemHistorico }) {
         <p className="text-xs text-muted-foreground mt-0.5">
           {formatDatetime(entry.created_at)}
         </p>
+
+        {/* Observação com expand/collapse — US-012 */}
         {entry.observacao && (
-          <blockquote className="mt-1.5 border-l-2 border-muted-foreground/30 pl-3 text-sm text-muted-foreground italic">
-            {entry.observacao}
-          </blockquote>
+          <>
+            <button
+              type="button"
+              onClick={() => setExpanded(v => !v)}
+              className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronDown
+                className={cn('h-3 w-3 transition-transform duration-150', expanded && 'rotate-180')}
+                aria-hidden="true"
+              />
+              {expanded ? 'Ocultar observação' : 'Ver observação'}
+            </button>
+            {expanded && (
+              <blockquote className="mt-1.5 border-l-2 border-muted-foreground/30 pl-3 text-sm text-muted-foreground italic">
+                {entry.observacao}
+              </blockquote>
+            )}
+          </>
         )}
       </div>
     </div>

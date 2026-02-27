@@ -6,6 +6,8 @@ from app.api.routes import auth as auth_router
 from app.api.routes import users as users_router
 from app.api.routes import ordens as ordens_router
 from app.api.routes import secretarias as secretarias_router
+from app.api.routes import audit as audit_router
+from app.api.routes import dashboard as dashboard_router
 
 app = FastAPI(
     title="Sistema OS Prefeitura",
@@ -28,6 +30,8 @@ app.include_router(auth_router.router)        # US-001: /api/auth/*
 app.include_router(users_router.router)       # US-002: /api/users/*
 app.include_router(ordens_router.router)      # US-003 a US-010: /api/ordens/*
 app.include_router(secretarias_router.router) # US-013: /api/secretarias/*
+app.include_router(dashboard_router.router)   # US-011: /api/dashboard/*
+app.include_router(audit_router.router)       # US-012: /api/ordens/{id}/historico + /api/audit-logs
 
 
 @app.get("/health", tags=["infra"])

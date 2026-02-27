@@ -22,7 +22,7 @@
  *     /secretaria/devolvidas  → DevolvidasPage       [secretaria, admin]
  *     /secretaria/ordens/:id/editar → EditarOrdemPage [secretaria]
  *     /secretaria/atesto      → AtestoPage           [secretaria, admin]
- *     /dashboard              → DashboardPage*      [gabinete, admin]
+ *     /dashboard              → DashboardExecutivoPage [gabinete, secretaria, admin]
  *     /audit                  → DashboardPage*      [admin]
  *
  * * Placeholder até Sprints 2–6 — substituído progressivamente.
@@ -36,7 +36,9 @@ import LoginPage from '@/pages/auth/LoginPage'
 import PrimeiroAcessoPage from '@/pages/auth/PrimeiroAcessoPage'
 import AccessDeniedPage from '@/pages/auth/AccessDeniedPage'
 import DashboardPage from '@/pages/DashboardPage'
+import DashboardExecutivoPage from '@/pages/dashboard/DashboardPage'
 import UserManagementPage from '@/pages/admin/UserManagementPage'
+import AuditPage from '@/pages/admin/AuditPage'
 import NovaOrdemPage from '@/pages/secretaria/NovaOrdemPage'
 import MinhasOrdensPage from '@/pages/secretaria/MinhasOrdensPage'
 import AnaliseGabinetePage from '@/pages/gabinete/AnaliseGabinetePage'
@@ -117,7 +119,7 @@ export const router = createBrowserRouter([
         path: 'audit',
         element: (
           <Guard roles={['admin']}>
-            <DashboardPage />
+            <AuditPage />
           </Guard>
         ),
       },
@@ -220,12 +222,12 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // --- Dashboard executivo ---
+      // --- Dashboard executivo (US-011) ---
       {
         path: 'dashboard',
         element: (
-          <Guard roles={['gabinete', 'admin']}>
-            <DashboardPage />
+          <Guard roles={['gabinete', 'secretaria', 'admin']}>
+            <DashboardExecutivoPage />
           </Guard>
         ),
       },
