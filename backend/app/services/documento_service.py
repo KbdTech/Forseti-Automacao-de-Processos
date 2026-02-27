@@ -288,6 +288,45 @@ class DocumentoService:
         sanitized = re.sub(r"[^\w.\-]", "_", filename)
         return sanitized[:100]  # limita comprimento para evitar paths longos
 
+    async def ensure_bucket(self) -> None:
+        """Cria o bucket no Supabase Storage se ainda não existir (idempotente).
+
+        Chamado no startup da aplicação (lifespan) — não afeta o desempenho
+        das requisições.  409 = bucket já existe: aceito como sucesso.
+        """
+        url = f"{settings.SUPABASE_URL}/storage/v1/bucket"
+        headers = {
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "id": settings.SUPABASE_STORAGE_BUCKET,
+            "name": settings.SUPABASE_STORAGE_BUCKET,
+            "public": False,
+            "fileSizeLimit": settings.MAX_UPLOAD_SIZE_BYTES,
+            "allowedMimeTypes": list(_ALLOWED_MIMES),
+        }
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(url, json=payload, headers=headers)
+
+        # 200/201 = criado agora; 409 = já existia — ambos OK
+        # Outros erros são logados mas não bloqueiam o startup
+        if response.status_code not in (200, 201, 409):
+            try:
+                body = response.json()
+                msg = body.get("message") or body.get("error") or str(body)
+            except Exception:
+                msg = response.text[:200]
+            # Aviso no stderr — não levanta exceção para não impedir o startup
+            import sys
+            print(
+                f"[AVISO] Não foi possível garantir o bucket "
+                f"'{settings.SUPABASE_STORAGE_BUCKET}' "
+                f"(HTTP {response.status_code}: {msg}). "
+                "Verifique SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY e Storage.",
+                file=sys.stderr,
+            )
+
     async def _storage_upload(
         self, path: str, content: bytes, mime: str
     ) -> None:
@@ -308,11 +347,23 @@ class DocumentoService:
             response = await client.post(url, content=content, headers=headers)
 
         if response.status_code not in (200, 201):
+            # Extrai a mensagem real do Supabase para facilitar o diagnóstico
+            try:
+                error_body = response.json()
+                supabase_msg = (
+                    error_body.get("message")
+                    or error_body.get("error")
+                    or str(error_body)
+                )
+            except Exception:
+                supabase_msg = response.text[:300]
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(
-                    "Falha ao armazenar o documento. "
-                    "Tente novamente ou contate o suporte."
+                    f"Falha ao armazenar o documento "
+                    f"(HTTP {response.status_code}: {supabase_msg}). "
+                    "Verifique se o bucket 'ordem-documentos' existe no "
+                    "Supabase Storage e se as credenciais estão corretas."
                 ),
             )
 

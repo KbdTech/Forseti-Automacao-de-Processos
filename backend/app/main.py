@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +12,15 @@ from app.api.routes import audit as audit_router
 from app.api.routes import dashboard as dashboard_router
 from app.api.routes import notifications as notifications_router
 from app.api.routes import documentos as documentos_router
+from app.services.documento_service import documento_service
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):  # noqa: ARG001
+    """Garante que o bucket do Supabase Storage existe antes de servir requests."""
+    await documento_service.ensure_bucket()
+    yield
+
 
 app = FastAPI(
     title="Sistema OS Prefeitura",
@@ -17,6 +28,7 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url="/api/redoc",
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

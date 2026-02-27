@@ -23,20 +23,10 @@ depends_on = None
 
 def upgrade() -> None:
     # ------------------------------------------------------------------
-    # 1. ENUM notification_status
-    # NOTA: asyncpg não suporta DO $$ blocks — usa SELECT + DDL separados.
-    # ------------------------------------------------------------------
-    conn = op.get_bind()
-    result = conn.execute(
-        sa.text("SELECT 1 FROM pg_type WHERE typname = 'notification_status'")
-    )
-    if not result.fetchone():
-        op.execute(
-            sa.text("CREATE TYPE notification_status AS ENUM ('enviado', 'falhou')")
-        )
-
-    # ------------------------------------------------------------------
-    # 2. notification_log — append-only, sem UPDATE/DELETE
+    # 1. ENUM notification_status + tabela notification_log
+    # NOTA: cria o ENUM via sa.Enum(create_type=True) no create_table
+    #       para evitar o bug do Alembic/SQLAlchemy 2.x onde create_type=False
+    #       é ignorado e o ENUM é criado duas vezes (DuplicateObject).
     # ------------------------------------------------------------------
     op.create_table(
         "notification_log",
@@ -51,7 +41,7 @@ def upgrade() -> None:
         sa.Column("destinatario", sa.String(length=255), nullable=False),
         sa.Column(
             "status",
-            sa.Enum("enviado", "falhou", name="notification_status", create_type=False),
+            sa.Enum("enviado", "falhou", name="notification_status"),
             nullable=False,
         ),
         sa.Column(
