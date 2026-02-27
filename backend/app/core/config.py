@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     SMTP_FROM: str = "noreply@prefeitura.gov.br"
     SMTP_STARTTLS: bool = True
 
+    # Supabase Storage (US-015)
+    SUPABASE_STORAGE_BUCKET: str = "ordem-documentos"
+    SIGNED_URL_TTL_SECONDS: int = 900        # 15 minutos
+    MAX_UPLOAD_SIZE_BYTES: int = 10_485_760  # 10 MB
+
     @property
     def smtp_enabled(self) -> bool:
         """Retorna True somente se SMTP estiver completamente configurado."""
