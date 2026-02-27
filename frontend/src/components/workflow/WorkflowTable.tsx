@@ -30,6 +30,7 @@ import {
   ChevronRight,
   RefreshCw,
   Clock,
+  ShieldCheck,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -237,7 +238,8 @@ export function WorkflowTable({
   const to = data ? Math.min(page * DEFAULT_PAGE_SIZE, data.total) : 0
 
   // Número de colunas para o TableSkeleton (protocolo + secretaria? + tipo + desc + valor + prio + status + criado + dias)
-  const colCount = 8 + (showSecretariaColumn ? 1 : 0)
+  // +1 para coluna GovBR (US-016)
+  const colCount = 9 + (showSecretariaColumn ? 1 : 0)
 
   return (
     <div className="space-y-4">
@@ -291,6 +293,9 @@ export function WorkflowTable({
               {showSecretariaColumn && (
                 <TableHead className="font-semibold">Secretaria</TableHead>
               )}
+              <TableHead className="font-semibold text-center w-8" title="Assinatura GovBR">
+                <ShieldCheck className="h-4 w-4 mx-auto text-muted-foreground" />
+              </TableHead>
               <TableHead className="font-semibold">Tipo</TableHead>
               <TableHead className="font-semibold">Descrição</TableHead>
               <TableHead className="font-semibold text-right">Valor Est.</TableHead>
@@ -346,6 +351,16 @@ export function WorkflowTable({
                     <TableCell className="text-sm">{ordem.secretaria_nome}</TableCell>
                   )}
 
+                  {/* Assinatura GovBR — US-016 */}
+                  <TableCell className="text-center">
+                    {ordem.assinatura_govbr && (
+                      <ShieldCheck
+                        className="h-4 w-4 mx-auto text-green-600"
+                        title="Assinada via GovBR"
+                      />
+                    )}
+                  </TableCell>
+
                   {/* Tipo */}
                   <TableCell className="text-sm">
                     {TIPO_ORDEM_LABELS[ordem.tipo as TipoOrdem] ?? ordem.tipo}
@@ -358,7 +373,7 @@ export function WorkflowTable({
 
                   {/* Valor */}
                   <TableCell className="text-sm text-right whitespace-nowrap">
-                    {ordem.valor_estimado.toLocaleString('pt-BR', {
+                    {Number(ordem.valor_estimado).toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}

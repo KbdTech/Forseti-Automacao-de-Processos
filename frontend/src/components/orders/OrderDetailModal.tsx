@@ -42,6 +42,8 @@ import { TIPO_ORDEM_LABELS, PRIORIDADE_CONFIG, PRIORIDADE_LABELS } from '@/utils
 import type { TipoOrdem, Prioridade, OrdemHistorico, StatusOrdem } from '@/types/ordem'
 
 // US-015 RN: statuses após os quais documentos são somente-leitura
+// US-016: statuses que não permitem novos uploads de documentos.
+// Permitidos implicitamente: AGUARDANDO_GABINETE, DEVOLVIDA_PARA_ALTERACAO, AGUARDANDO_DOCUMENTACAO.
 const STATUSES_IMUTAVEIS: StatusOrdem[] = [
   'AGUARDANDO_CONTROLADORIA',
   'AGUARDANDO_EMPENHO',
@@ -50,6 +52,9 @@ const STATUSES_IMUTAVEIS: StatusOrdem[] = [
   'AGUARDANDO_LIQUIDACAO',
   'AGUARDANDO_PAGAMENTO',
   'PAGA',
+  'CANCELADA',
+  'COM_IRREGULARIDADE',
+  'EXECUCAO_COM_PENDENCIA',
 ]
 
 // ---------------------------------------------------------------------------
@@ -226,9 +231,10 @@ function HistoricoEntry({ entry }: { entry: OrdemHistorico }) {
 interface DocumentosTabContentProps {
   orderId: string | null
   ordemStatus: StatusOrdem | null
+  assinaturaGovbr: boolean
 }
 
-function DocumentosTabContent({ orderId, ordemStatus }: DocumentosTabContentProps) {
+function DocumentosTabContent({ orderId, ordemStatus, assinaturaGovbr }: DocumentosTabContentProps) {
   const user = useAuthStore((s) => s.user)
   const canUpload =
     (user?.role === 'secretaria' || user?.role === 'admin') &&
@@ -239,6 +245,18 @@ function DocumentosTabContent({ orderId, ordemStatus }: DocumentosTabContentProp
     <TabsContent value="documentos" className="flex-1 overflow-y-auto mt-2 pr-1">
       {orderId ? (
         <div className="space-y-4">
+          {/* US-016: indicador de assinatura digital via GovBR */}
+          <div className="flex items-center gap-2 rounded-md border p-3 text-sm">
+            <CheckCircle
+              className={assinaturaGovbr ? 'h-4 w-4 text-green-600' : 'h-4 w-4 text-muted-foreground'}
+            />
+            <span className={assinaturaGovbr ? 'text-green-700 font-medium' : 'text-muted-foreground'}>
+              {assinaturaGovbr
+                ? 'Ordem assinada digitalmente via gov.br/assinatura'
+                : 'Ordem não assinada via GovBR'}
+            </span>
+          </div>
+
           {canUpload && (
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -463,7 +481,11 @@ export function OrderDetailModal({ orderId, onClose, renderActions }: OrderDetai
           {/* ---------------------------------------------------------------
               Tab: Documentos — US-015
           --------------------------------------------------------------- */}
-          <DocumentosTabContent orderId={orderId} ordemStatus={ordem?.status ?? null} />
+          <DocumentosTabContent
+            orderId={orderId}
+            ordemStatus={ordem?.status ?? null}
+            assinaturaGovbr={ordem?.assinatura_govbr ?? false}
+          />
         </Tabs>
 
         {/* Slot de ações de workflow — injetado pela página pai (ex: ActionPanel do Gabinete) */}

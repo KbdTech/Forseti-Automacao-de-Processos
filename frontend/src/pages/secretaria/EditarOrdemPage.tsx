@@ -96,6 +96,8 @@ const etapa1Schema = z.object({
     required_error: 'Selecione a prioridade.',
   }),
   responsavel: z.string().max(255).optional(),
+  /** US-016: declaração de assinatura digital via GovBR. */
+  assinatura_govbr: z.boolean().default(false),
 })
 
 const etapa2Schema = z.object({
@@ -258,6 +260,7 @@ export default function EditarOrdemPage() {
       tipo: ordem.tipo,
       prioridade: ordem.prioridade,
       responsavel: ordem.responsavel ?? '',
+      assinatura_govbr: ordem.assinatura_govbr ?? false,
       descricao: ordem.descricao ?? '',
       valor_estimado: ordem.valor_estimado,
       justificativa: ordem.justificativa,
@@ -276,6 +279,7 @@ export default function EditarOrdemPage() {
         descricao: data.descricao || undefined,
         valor_estimado: data.valor_estimado,
         justificativa: data.justificativa,
+        assinatura_govbr: data.assinatura_govbr ?? false,
       })
       // Segundo: executa ação de reenvio — US-006 RN-35 (versao incrementada no back-end)
       return executeAcao(id!, { acao: 'reenviar' })
@@ -531,6 +535,30 @@ export default function EditarOrdemPage() {
                   {...register('responsavel')}
                 />
               </div>
+
+              {/* Assinatura digital GovBR — US-016 */}
+              <Controller
+                name="assinatura_govbr"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-start gap-3 rounded-md border p-3">
+                    <input
+                      id="assinatura-govbr"
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-primary cursor-pointer"
+                    />
+                    <Label
+                      htmlFor="assinatura-govbr"
+                      className="text-sm leading-snug cursor-pointer font-normal"
+                    >
+                      Esta ordem foi assinada digitalmente via{' '}
+                      <span className="font-medium">gov.br/assinatura</span>
+                    </Label>
+                  </div>
+                )}
+              />
             </>
           )}
 

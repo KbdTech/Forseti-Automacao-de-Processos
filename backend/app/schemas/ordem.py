@@ -87,6 +87,13 @@ class OrdemCreate(BaseModel):
             description="Justificativa da demanda — mínimo 50 caracteres (US-003 RN-19).",
         ),
     ]
+    assinatura_govbr: Annotated[
+        bool,
+        Field(
+            default=False,
+            description="US-016: indica se a OS foi assinada via GovBR (declaração do usuário).",
+        ),
+    ] = False
 
 
 class OrdemUpdate(BaseModel):
@@ -140,6 +147,13 @@ class OrdemUpdate(BaseModel):
             description="Justificativa atualizada — mínimo 50 caracteres.",
         ),
     ]
+    assinatura_govbr: Annotated[
+        bool | None,
+        Field(
+            default=None,
+            description="US-016: atualiza indicador de assinatura GovBR.",
+        ),
+    ] = None
 
 
 # ---------------------------------------------------------------------------
@@ -358,6 +372,12 @@ class OrdemResponse(BaseModel):
     # Máquina de estados
     status: Annotated[str, Field(description="Status atual da ordem.")]
     versao: Annotated[int, Field(description="Versão — incrementada a cada reenvio.")]
+
+    # Assinatura digital (US-016)
+    assinatura_govbr: Annotated[
+        bool,
+        Field(description="US-016: true se a OS foi assinada digitalmente via GovBR."),
+    ]
 
     # Pipeline financeiro — Empenho (US-008)
     numero_empenho: Annotated[

@@ -73,6 +73,7 @@ class OrdemService:
             criador_nome=ordem.criador.nome_completo,     # desnormalizado
             status=ordem.status,
             versao=ordem.versao,
+            assinatura_govbr=ordem.assinatura_govbr,  # US-016
             # Pipeline financeiro (todos nullable)
             numero_empenho=ordem.numero_empenho,
             valor_empenhado=ordem.valor_empenhado,
@@ -210,6 +211,7 @@ class OrdemService:
             criado_por=user.id,
             status=StatusOrdemEnum.AGUARDANDO_GABINETE,
             versao=1,
+            assinatura_govbr=data.assinatura_govbr,  # US-016
         )
         db.add(ordem)
         await db.flush()  # persiste para obter ordem.id antes do histórico
@@ -476,6 +478,8 @@ class OrdemService:
             ordem.valor_estimado = data.valor_estimado
         if data.justificativa is not None:
             ordem.justificativa = data.justificativa
+        if data.assinatura_govbr is not None:
+            ordem.assinatura_govbr = data.assinatura_govbr
 
         ordem.updated_at = datetime.now(timezone.utc)
 

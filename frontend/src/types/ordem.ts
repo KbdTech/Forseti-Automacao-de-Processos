@@ -71,6 +71,8 @@ export interface Ordem {
   status: StatusOrdem
   /** Incrementado a cada reenvio. US-006 RN-35. */
   versao: number
+  /** US-016: true se a OS foi assinada digitalmente via GovBR (declaração do usuário). */
+  assinatura_govbr: boolean
 
   // Campos financeiros (nullable até preenchidos no fluxo)
   numero_empenho: string | null
@@ -123,6 +125,8 @@ export interface OrdemCreatePayload {
   valor_estimado: number
   /** US-003 RN-19: mínimo de 50 caracteres. */
   justificativa: string
+  /** US-016: indica se a OS foi assinada via GovBR. Default: false. */
+  assinatura_govbr?: boolean
 }
 
 /**
@@ -137,6 +141,8 @@ export interface OrdemUpdatePayload {
   descricao?: string
   valor_estimado?: number
   justificativa?: string
+  /** US-016: atualiza indicador de assinatura GovBR. */
+  assinatura_govbr?: boolean
 }
 
 /**

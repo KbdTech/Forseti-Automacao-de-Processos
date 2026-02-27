@@ -46,6 +46,9 @@ _MAGIC_BYTES: dict[str, bytes] = {
 _ALLOWED_MIMES = frozenset(_MAGIC_BYTES.keys())
 
 # Status após os quais documentos são somente-leitura (US-015 RN)
+# US-016: statuses que NÃO permitem upload de novos documentos.
+# Permitidos: AGUARDANDO_GABINETE (criação), DEVOLVIDA_PARA_ALTERACAO (edição),
+#             AGUARDANDO_DOCUMENTACAO (Controladoria solicitou documentação).
 _STATUSES_IMUTAVEIS: frozenset[StatusOrdemEnum] = frozenset({
     StatusOrdemEnum.AGUARDANDO_CONTROLADORIA,
     StatusOrdemEnum.AGUARDANDO_EMPENHO,
@@ -54,6 +57,9 @@ _STATUSES_IMUTAVEIS: frozenset[StatusOrdemEnum] = frozenset({
     StatusOrdemEnum.AGUARDANDO_LIQUIDACAO,
     StatusOrdemEnum.AGUARDANDO_PAGAMENTO,
     StatusOrdemEnum.PAGA,
+    StatusOrdemEnum.CANCELADA,
+    StatusOrdemEnum.COM_IRREGULARIDADE,
+    StatusOrdemEnum.EXECUCAO_COM_PENDENCIA,
 })
 
 

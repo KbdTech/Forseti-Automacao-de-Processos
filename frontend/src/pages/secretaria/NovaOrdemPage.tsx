@@ -94,6 +94,8 @@ const etapa1Schema = z.object({
     required_error: 'Selecione a prioridade.',
   }),
   responsavel: z.string().max(255).optional(),
+  /** US-016: declaração de assinatura digital via GovBR. */
+  assinatura_govbr: z.boolean().default(false),
 })
 
 const etapa2Schema = z.object({
@@ -327,6 +329,7 @@ export default function NovaOrdemPage() {
       tipo: undefined,
       prioridade: undefined,
       responsavel: '',
+      assinatura_govbr: false,
       descricao: '',
       valor_estimado: undefined,
       justificativa: '',
@@ -343,6 +346,7 @@ export default function NovaOrdemPage() {
         descricao: data.descricao || undefined,
         valor_estimado: data.valor_estimado,
         justificativa: data.justificativa,
+        assinatura_govbr: data.assinatura_govbr ?? false,
       })
       // US-015: upload de arquivos selecionados durante o preenchimento
       if (pendingFiles.length > 0) {
@@ -594,6 +598,30 @@ export default function NovaOrdemPage() {
                   {...register('responsavel')}
                 />
               </div>
+
+              {/* Assinatura digital GovBR — US-016 */}
+              <Controller
+                name="assinatura_govbr"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-start gap-3 rounded-md border p-3">
+                    <input
+                      id="assinatura-govbr"
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-primary cursor-pointer"
+                    />
+                    <Label
+                      htmlFor="assinatura-govbr"
+                      className="text-sm leading-snug cursor-pointer font-normal"
+                    >
+                      Esta ordem foi assinada digitalmente via{' '}
+                      <span className="font-medium">gov.br/assinatura</span>
+                    </Label>
+                  </div>
+                )}
+              />
             </>
           )}
 

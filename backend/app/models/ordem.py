@@ -23,6 +23,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -153,6 +154,18 @@ class Ordem(Base):
         default=1,
         server_default=text("1"),
         comment="Versão da ordem — incrementada a cada reenvio (US-006 RN-35)",
+    )
+
+    # ------------------------------------------------------------------
+    # Assinatura digital (US-016)
+    # ------------------------------------------------------------------
+
+    assinatura_govbr: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+        comment="US-016: indica se a OS foi assinada digitalmente via GovBR (declaração do usuário)",
     )
 
     # ------------------------------------------------------------------
