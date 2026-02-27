@@ -598,30 +598,6 @@ export default function NovaOrdemPage() {
                   {...register('responsavel')}
                 />
               </div>
-
-              {/* Assinatura digital GovBR — US-016 */}
-              <Controller
-                name="assinatura_govbr"
-                control={control}
-                render={({ field }) => (
-                  <div className="flex items-start gap-3 rounded-md border p-3">
-                    <input
-                      id="assinatura-govbr"
-                      type="checkbox"
-                      checked={field.value}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      className="mt-0.5 h-4 w-4 accent-primary cursor-pointer"
-                    />
-                    <Label
-                      htmlFor="assinatura-govbr"
-                      className="text-sm leading-snug cursor-pointer font-normal"
-                    >
-                      Esta ordem foi assinada digitalmente via{' '}
-                      <span className="font-medium">gov.br/assinatura</span>
-                    </Label>
-                  </div>
-                )}
-              />
             </>
           )}
 
@@ -760,6 +736,30 @@ export default function NovaOrdemPage() {
                   </div>
                 )}
               </div>
+
+              {/* Assinatura digital GovBR — US-016 */}
+              <Controller
+                name="assinatura_govbr"
+                control={control}
+                render={({ field }) => (
+                  <div className="flex items-start gap-3 rounded-md border p-3">
+                    <input
+                      id="assinatura-govbr"
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 accent-primary cursor-pointer"
+                    />
+                    <Label
+                      htmlFor="assinatura-govbr"
+                      className="text-sm leading-snug cursor-pointer font-normal"
+                    >
+                      O documento anexado foi assinado digitalmente via{' '}
+                      <span className="font-medium">gov.br/assinatura</span>
+                    </Label>
+                  </div>
+                )}
+              />
             </>
           )}
 
