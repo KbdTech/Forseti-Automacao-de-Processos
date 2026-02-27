@@ -58,20 +58,20 @@ class OrdemCreate(BaseModel):
         Field(description="Nível de urgência: normal, alta ou urgente."),
     ]
     responsavel: Annotated[
-        str,
+        str | None,
         Field(
-            min_length=2,
+            default=None,
             max_length=255,
-            description="Nome do servidor responsável pela execução da demanda.",
+            description="Nome do servidor responsável pela execução da demanda (opcional).",
         ),
-    ]
+    ] = None
     descricao: Annotated[
-        str,
+        str | None,
         Field(
-            min_length=10,
-            description="Descrição detalhada da demanda.",
+            default=None,
+            description="Descrição detalhada da demanda (opcional).",
         ),
-    ]
+    ] = None
     valor_estimado: Annotated[
         Decimal,
         Field(
@@ -338,8 +338,8 @@ class OrdemResponse(BaseModel):
     # Dados da demanda
     tipo: Annotated[str, Field(description="Tipo: compra, servico ou obra.")]
     prioridade: Annotated[str, Field(description="Prioridade: normal, alta ou urgente.")]
-    responsavel: Annotated[str, Field(description="Nome do servidor responsável.")]
-    descricao: Annotated[str, Field(description="Descrição detalhada da demanda.")]
+    responsavel: Annotated[str | None, Field(default=None, description="Nome do servidor responsável.")]
+    descricao: Annotated[str | None, Field(default=None, description="Descrição detalhada da demanda.")]
     valor_estimado: Annotated[Decimal, Field(description="Valor estimado em R$.")]
     justificativa: Annotated[str, Field(description="Justificativa da demanda.")]
 

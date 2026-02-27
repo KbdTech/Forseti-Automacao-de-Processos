@@ -197,8 +197,8 @@ class OrdemService:
             protocolo=protocolo,
             tipo=TipoOrdemEnum(data.tipo),
             prioridade=PrioridadeEnum(data.prioridade),
-            responsavel=data.responsavel,
-            descricao=data.descricao,
+            responsavel=data.responsavel or "",   # NOT NULL — None vira string vazia
+            descricao=data.descricao or "",       # NOT NULL — None vira string vazia
             valor_estimado=data.valor_estimado,
             justificativa=data.justificativa,
             secretaria_id=user.secretaria_id,       # US-003 RN-15: vinculada ao criador
