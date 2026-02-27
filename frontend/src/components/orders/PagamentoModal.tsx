@@ -53,9 +53,9 @@ import { extractApiError } from '@/utils/formatters'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatBRL(value: number | null | undefined): string {
+function formatBRL(value: string | number | null | undefined): string {
   if (value == null) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 function todayISODate(): string {
@@ -97,7 +97,7 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
   useEffect(() => {
     if (orderId) {
       // Pré-preenche com valor_liquidado
-      setValorPago(ordem?.valor_liquidado ? ordem.valor_liquidado.toFixed(2) : '')
+      setValorPago(ordem?.valor_liquidado ? Number(ordem.valor_liquidado).toFixed(2) : '')
       setDataPagamento(todayISODate())
       setFormaPagamento('')
       setObservacao('')
@@ -113,7 +113,7 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
   }
 
   const valorNum = parseFloat(valorPago.replace(',', '.')) || 0
-  const valorLiquidado = ordem?.valor_liquidado ?? 0
+  const valorLiquidado = Number(ordem?.valor_liquidado ?? 0)
 
   // Alerta de divergência — US-010 RN-52
   const hasDiff =

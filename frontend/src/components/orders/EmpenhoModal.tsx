@@ -40,8 +40,9 @@ import { getOrdem, executeAcao } from '@/services/ordensService'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+function formatBRL(value: string | number | null | undefined): string {
+  if (value == null) return '—'
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 // ---------------------------------------------------------------------------
@@ -70,7 +71,7 @@ export function EmpenhoModal({ orderId, onClose, onSuccess }: EmpenhoModalProps)
     staleTime: 1000 * 30,
   })
 
-  const valorEstimado = ordem?.valor_estimado ?? 0
+  const valorEstimado = Number(ordem?.valor_estimado ?? 0)
 
   const [numeroEmpenho, setNumeroEmpenho] = useState('')
   const [valorEmpenhado, setValorEmpenhado] = useState('')

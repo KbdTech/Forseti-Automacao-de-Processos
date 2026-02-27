@@ -94,6 +94,10 @@ class OrdemService:
     ) -> Ordem | None:
         """Carrega Ordem com secretaria e criador via selectinload.
 
+        Usa populate_existing=True para garantir que os relacionamentos
+        lazy="noload" sejam recarregados mesmo que o objeto já esteja na
+        identity map (cenário pós-commit + refresh no WorkflowEngine).
+
         Args:
             ordem_id: UUID da ordem a carregar.
 
@@ -107,6 +111,7 @@ class OrdemService:
                 selectinload(Ordem.secretaria),
                 selectinload(Ordem.criador),
             )
+            .execution_options(populate_existing=True)
         )
         return result.scalar_one_or_none()
 

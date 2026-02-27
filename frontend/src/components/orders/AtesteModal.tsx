@@ -40,8 +40,9 @@ import { extractApiError } from '@/utils/formatters'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+function formatBRL(value: string | number | null | undefined): string {
+  if (value == null) return '—'
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 // ---------------------------------------------------------------------------

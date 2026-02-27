@@ -21,13 +21,13 @@ const ROLE_REDIRECT: Record<RoleEnum, string> = {
   secretaria: '/secretaria/ordens',
   gabinete: '/gabinete',
   controladoria: '/controladoria',
-  contabilidade: '/contabilidade',
-  tesouraria: '/tesouraria',
-  admin: '/admin',
+  contabilidade: '/contabilidade/empenho',
+  tesouraria: '/tesouraria/pagamento',
+  admin: '/admin/usuarios',
 }
 
 export function useAuth() {
-  const { user, accessToken, isAuthenticated, setAuth, clearAuth } =
+  const { user, accessToken, isAuthenticated, setAuth, clearAuth, patchUser } =
     useAuthStore()
 
   /** Indica se há uma operação de login ou logout em andamento. */
@@ -87,5 +87,6 @@ export function useAuth() {
     logout,
     isRole,
     redirectPath,
+    patchUser,
   }
 }

@@ -91,9 +91,9 @@ function formatDate(iso: string): string {
   }
 }
 
-function formatBRL(value: number | null): string {
+function formatBRL(value: string | number | null): string {
   if (value == null) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 // ---------------------------------------------------------------------------

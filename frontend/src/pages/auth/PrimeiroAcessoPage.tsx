@@ -60,7 +60,7 @@ type ChangePasswordFormData = z.infer<typeof changePasswordSchema>
 
 export default function PrimeiroAcessoPage() {
   const navigate = useNavigate()
-  const { redirectPath } = useAuth()
+  const { redirectPath, patchUser } = useAuth()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const {
@@ -75,6 +75,8 @@ export default function PrimeiroAcessoPage() {
     setErrorMessage(null)
     try {
       await changePassword(data)
+      // Atualiza o store para refletir que a senha foi trocada (US-001 RN-5)
+      patchUser({ must_change_password: false })
       toast.success('Senha definida com sucesso! Bem-vindo ao sistema.')
       navigate(redirectPath, { replace: true })
     } catch (error) {

@@ -39,6 +39,12 @@ interface AuthStore {
   setTokens: (accessToken: string, refreshToken: string) => void
 
   /**
+   * Atualiza campos parciais do user — usado após changePassword para marcar
+   * must_change_password=false sem precisar de nova chamada à API.
+   */
+  patchUser: (updates: Partial<UserProfile>) => void
+
+  /**
    * Limpa todos os dados de autenticação — usado no logout e em erros de refresh.
    * US-001 Cenário 7.
    */
@@ -67,6 +73,11 @@ export const useAuthStore = create<AuthStore>()(
 
       setTokens: (accessToken: string, refreshToken: string) =>
         set({ accessToken, refreshToken }),
+
+      patchUser: (updates: Partial<UserProfile>) =>
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updates } : null,
+        })),
 
       clearAuth: () =>
         set({

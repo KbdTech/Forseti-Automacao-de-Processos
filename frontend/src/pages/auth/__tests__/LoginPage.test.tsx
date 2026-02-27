@@ -260,7 +260,7 @@ describe('LoginPage — US-001', () => {
       fireEvent.click(screen.getByRole('button', { name: /entrar/i }))
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/admin', { replace: true })
+        expect(mockNavigate).toHaveBeenCalledWith('/admin/usuarios', { replace: true })
       })
     })
 

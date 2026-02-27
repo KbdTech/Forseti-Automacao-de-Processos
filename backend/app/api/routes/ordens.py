@@ -103,7 +103,7 @@ async def list_ordens(
     db: Annotated[AsyncSession, Depends(get_db)],
     page: Annotated[int, Query(ge=1, description="Página (1-based)")] = 1,
     limit: Annotated[
-        int, Query(ge=1, le=100, description="Registros por página (máx. 100)")
+        int, Query(ge=1, le=500, description="Registros por página (máx. 500)")
     ] = 20,
     status: Annotated[
         str | None,

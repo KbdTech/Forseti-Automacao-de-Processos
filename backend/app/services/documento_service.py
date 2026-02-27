@@ -309,9 +309,10 @@ class DocumentoService:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(url, json=payload, headers=headers)
 
-        # 200/201 = criado agora; 409 = já existia — ambos OK
+        # 200/201 = criado agora; 400/409 = já existia — todos OK
+        # (Supabase pode retornar 400 ou 409 para "bucket já existe")
         # Outros erros são logados mas não bloqueiam o startup
-        if response.status_code not in (200, 201, 409):
+        if response.status_code not in (200, 201, 400, 409):
             try:
                 body = response.json()
                 msg = body.get("message") or body.get("error") or str(body)
@@ -391,10 +392,14 @@ class DocumentoService:
             )
 
         data = response.json()
-        # Supabase retorna {"signedURL": "/storage/v1/object/sign/...?token=..."}
+        # Supabase pode retornar "/storage/v1/object/sign/..." (formato antigo)
+        # ou "/object/sign/..." (formato atual) — normalizamos para garantir
+        # que a URL final sempre inclua /storage/v1.
         signed_path = data.get("signedURL") or data.get("signedUrl", "")
-        if signed_path.startswith("/"):
+        if signed_path.startswith("/storage/v1"):
             return f"{settings.SUPABASE_URL}{signed_path}"
+        elif signed_path.startswith("/"):
+            return f"{settings.SUPABASE_URL}/storage/v1{signed_path}"
         return signed_path
 
     async def _storage_delete(self, path: str) -> None:

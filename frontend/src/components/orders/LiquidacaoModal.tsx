@@ -41,9 +41,9 @@ import { extractApiError } from '@/utils/formatters'
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatBRL(value: number | null | undefined): string {
+function formatBRL(value: string | number | null | undefined): string {
   if (value == null) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 function todayISODate(): string {
@@ -90,7 +90,7 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
   useEffect(() => {
     if (orderId) {
       // Pré-preenche valor com valor_empenhado
-      setValorLiquidado(ordem?.valor_empenhado ? ordem.valor_empenhado.toFixed(2) : '')
+      setValorLiquidado(ordem?.valor_empenhado ? Number(ordem.valor_empenhado).toFixed(2) : '')
       setDataLiquidacao(todayISODate())
       setObservacao('')
     }
