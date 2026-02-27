@@ -15,7 +15,7 @@
  * US-003 RN-20: status inicial = AGUARDANDO_GABINETE (back-end).
  */
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -23,6 +23,7 @@ import { z } from 'zod'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import {
   CheckCircle,
+  CloudUpload,
   Copy,
   Check,
   ChevronRight,
@@ -32,6 +33,7 @@ import {
   FileText,
   ClipboardList,
   CircleDollarSign,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
@@ -69,6 +71,7 @@ import { Separator } from '@/components/ui/separator'
 
 import { useAuthStore } from '@/stores/authStore'
 import { createOrdem } from '@/services/ordensService'
+import { uploadDocumento } from '@/services/documentosService'
 import { listSecretarias } from '@/services/secretariasService'
 import {
   TIPO_ORDEM_LABELS,
@@ -125,6 +128,30 @@ function formatBRL(value: string): string {
 function parseBRL(formatted: string): number {
   const cleaned = formatted.replace(/[R$\s.]/g, '').replace(',', '.')
   return parseFloat(cleaned) || 0
+}
+
+// ---------------------------------------------------------------------------
+// Validação de arquivo (US-015)
+// ---------------------------------------------------------------------------
+
+const ALLOWED_MIMES = ['application/pdf', 'image/jpeg', 'image/png'] as const
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+}
+
+function validatePendingFile(file: File): string | null {
+  if (!ALLOWED_MIMES.includes(file.type as (typeof ALLOWED_MIMES)[number])) {
+    return `Tipo "${file.type || 'desconhecido'}" não permitido. Use PDF, JPEG ou PNG.`
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    return `Arquivo muito grande (${formatBytes(file.size)}). Máximo: 10 MB.`
+  }
+  if (file.size === 0) return 'Arquivo vazio não é permitido.'
+  return null
 }
 
 // ---------------------------------------------------------------------------
@@ -273,6 +300,9 @@ export default function NovaOrdemPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [valorInput, setValorInput] = useState('')
   const [ordemCriada, setOrdemCriada] = useState<Ordem | null>(null)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [pendingDragOver, setPendingDragOver] = useState(false)
+  const pendingFileInputRef = useRef<HTMLInputElement>(null)
 
   // Busca secretarias para exibir o nome da secretaria do usuário
   const { data: secretarias } = useQuery({
@@ -305,15 +335,29 @@ export default function NovaOrdemPage() {
   })
 
   const mutation = useMutation({
-    mutationFn: (data: FormData) =>
-      createOrdem({
+    mutationFn: async (data: FormData) => {
+      const ordem = await createOrdem({
         tipo: data.tipo,
         prioridade: data.prioridade,
         responsavel: data.responsavel || undefined,
         descricao: data.descricao || undefined,
         valor_estimado: data.valor_estimado,
         justificativa: data.justificativa,
-      }),
+      })
+      // US-015: upload de arquivos selecionados durante o preenchimento
+      if (pendingFiles.length > 0) {
+        const results = await Promise.allSettled(
+          pendingFiles.map((file) => uploadDocumento(ordem.id, { file })),
+        )
+        const failed = results.filter((r) => r.status === 'rejected').length
+        if (failed > 0) {
+          toast.warning(
+            `${failed} documento(s) não puderam ser enviados. Tente novamente na tela da ordem.`,
+          )
+        }
+      }
+      return ordem
+    },
     onSuccess: (ordem) => {
       setOrdemCriada(ordem)
       setConfirmOpen(false)
@@ -351,6 +395,30 @@ export default function NovaOrdemPage() {
     setOrdemCriada(null)
     setStep(1)
     setValorInput('')
+    setPendingFiles([])
+  }
+
+  function addPendingFile(file: File) {
+    const error = validatePendingFile(file)
+    if (error) { toast.error(error); return }
+    // evita duplicatas por nome+tamanho
+    if (pendingFiles.some((f) => f.name === file.name && f.size === file.size)) return
+    setPendingFiles((prev) => [...prev, file])
+  }
+
+  function removePendingFile(idx: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  function handlePendingFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    Array.from(e.target.files ?? []).forEach(addPendingFile)
+    e.target.value = ''
+  }
+
+  function handlePendingDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    setPendingDragOver(false)
+    Array.from(e.dataTransfer.files).forEach(addPendingFile)
   }
 
   const values = getValues()
@@ -599,6 +667,71 @@ export default function NovaOrdemPage() {
                   <p className="text-xs text-destructive">{errors.justificativa.message}</p>
                 )}
               </div>
+
+              {/* Documentos de suporte — US-015 */}
+              <div className="space-y-2">
+                <Label>Documentos de suporte <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <p className="text-xs text-muted-foreground">
+                  PDF, JPEG ou PNG — máx 10 MB por arquivo. Serão anexados automaticamente ao criar a ordem.
+                </p>
+                {/* Zona de drop */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Clique ou arraste arquivos para selecioná-los"
+                  onClick={() => pendingFileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') pendingFileInputRef.current?.click()
+                  }}
+                  onDrop={handlePendingDrop}
+                  onDragOver={(e) => { e.preventDefault(); setPendingDragOver(true) }}
+                  onDragLeave={() => setPendingDragOver(false)}
+                  className={[
+                    'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-4 text-center transition-colors cursor-pointer',
+                    pendingDragOver
+                      ? 'border-primary bg-primary/5'
+                      : 'border-muted-foreground/30 hover:border-primary hover:bg-primary/5',
+                  ].join(' ')}
+                >
+                  <CloudUpload className="h-7 w-7 text-muted-foreground" />
+                  <p className="text-sm">Arraste ou clique para selecionar arquivos</p>
+                </div>
+                <input
+                  ref={pendingFileInputRef}
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  multiple
+                  className="hidden"
+                  onChange={handlePendingFileInput}
+                />
+                {/* Lista de arquivos selecionados */}
+                {pendingFiles.length > 0 && (
+                  <div className="space-y-1.5">
+                    {pendingFiles.map((file, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2 text-sm"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="truncate font-medium">{file.name}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            ({formatBytes(file.size)})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label={`Remover ${file.name}`}
+                          onClick={() => removePendingFile(idx)}
+                          className="ml-2 shrink-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -651,6 +784,26 @@ export default function NovaOrdemPage() {
               </div>
 
               <Separator />
+
+              {pendingFiles.length > 0 && (
+                <>
+                  <div>
+                    <p className="text-sm font-medium mb-2">
+                      Documentos a anexar ({pendingFiles.length})
+                    </p>
+                    <div className="space-y-1">
+                      {pendingFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <FileText className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">{file.name}</span>
+                          <span className="shrink-0 text-xs">({formatBytes(file.size)})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
 
               <div>
                 <p className="text-sm font-medium mb-1">Justificativa</p>
