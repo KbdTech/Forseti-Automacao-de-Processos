@@ -13,6 +13,7 @@
 
 import { NavLink } from 'react-router-dom'
 import {
+  Archive,
   Banknote,
   Building2,
   CheckSquare,
@@ -49,6 +50,7 @@ const ICON_MAP: Record<SidebarIconKey, LucideIcon> = {
   Receipt,
   Banknote,
   CreditCard,
+  Archive,
   LayoutDashboard,
   ScrollText,
   Users,

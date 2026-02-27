@@ -39,6 +39,7 @@ export type SidebarIconKey =
   | 'Receipt'
   | 'Banknote'
   | 'CreditCard'
+  | 'Archive'
   | 'LayoutDashboard'
   | 'ScrollText'
   | 'Users'
@@ -132,6 +133,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/tesouraria/pagamento',
     iconKey: 'CreditCard',
     roles: ['tesouraria', 'admin'],
+  },
+  {
+    key: 'ordens-pagas',
+    label: 'Ordens Pagas',
+    path: '/tesouraria/pagas',
+    iconKey: 'Archive',
+    roles: ['tesouraria', 'contabilidade', 'admin'],
   },
 
   // --- Dashboard / Gestão ---

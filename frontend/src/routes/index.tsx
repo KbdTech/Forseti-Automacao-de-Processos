@@ -1,31 +1,30 @@
 /**
- * Configuração central de rotas — US-001 e US-002.
+ * Configuração central de rotas — US-001 a US-014.
  *
  * Usa createBrowserRouter (React Router v6.4+) para suporte ao Data API.
  *
  * Estrutura:
- *   /login                    → LoginPage          (público)
- *   /primeiro-acesso          → PrimeiroAcessoPage  (público)
- *   /acesso-negado            → AccessDeniedPage    (público)
+ *   /login                    → LoginPage                  (público)
+ *   /primeiro-acesso          → PrimeiroAcessoPage         (público)
+ *   /acesso-negado            → AccessDeniedPage           (público)
  *
  *   / (AppLayout)
- *     /admin/usuarios         → UserManagementPage  [admin]
- *     /admin/secretarias      → DashboardPage*      [admin]
- *     /gabinete               → AnaliseGabinetePage [gabinete, admin]
- *     /controladoria          → AnaliseControladoriaPage [controladoria, admin]
- *     /contabilidade/empenho  → EmpenhoPage          [contabilidade, admin]
- *     /contabilidade/liquidacao→ LiquidacaoPage      [contabilidade, admin]
- *     /tesouraria/pagamento   → PagamentoPage       [tesouraria, admin]
- *     /tesouraria/pagas       → OrdensPagasPage     [tesouraria, contabilidade, admin]
- *     /secretaria/ordens      → DashboardPage*      [secretaria, admin]
- *     /secretaria/nova-ordem  → DashboardPage*      [secretaria]
- *     /secretaria/devolvidas  → DevolvidasPage       [secretaria, admin]
- *     /secretaria/ordens/:id/editar → EditarOrdemPage [secretaria]
- *     /secretaria/atesto      → AtestoPage           [secretaria, admin]
- *     /dashboard              → DashboardExecutivoPage [gabinete, secretaria, admin]
- *     /audit                  → DashboardPage*      [admin]
- *
- * * Placeholder até Sprints 2–6 — substituído progressivamente.
+ *     /admin/usuarios         → UserManagementPage         [admin]
+ *     /admin/secretarias      → SecretariaManagementPage   [admin]
+ *     /gabinete               → AnaliseGabinetePage        [gabinete, admin]
+ *     /controladoria          → AnaliseControladoriaPage   [controladoria, admin]
+ *     /contabilidade/empenho  → EmpenhoPage                [contabilidade, admin]
+ *     /contabilidade/liquidacao→ LiquidacaoPage            [contabilidade, admin]
+ *     /tesouraria/pagamento   → PagamentoPage              [tesouraria, admin]
+ *     /tesouraria/pagas       → OrdensPagasPage            [tesouraria, contabilidade, admin]
+ *     /secretaria/ordens      → MinhasOrdensPage           [secretaria, admin]
+ *     /secretaria/nova-ordem  → NovaOrdemPage              [secretaria]
+ *     /secretaria/devolvidas  → DevolvidasPage             [secretaria, admin]
+ *     /secretaria/ordens/:id/editar → EditarOrdemPage      [secretaria]
+ *     /secretaria/atesto      → AtestoPage                 [secretaria, admin]
+ *     /dashboard              → DashboardExecutivoPage     [gabinete, admin]
+ *     /audit                  → AuditPage                  [admin]
+ *     /configuracoes/notificacoes → NotificationPreferencesPage [todos]
  *
  * US-002 RN-12: RoleGuard oculta rotas não autorizadas (retorna 403 / /acesso-negado).
  */
@@ -35,9 +34,9 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import LoginPage from '@/pages/auth/LoginPage'
 import PrimeiroAcessoPage from '@/pages/auth/PrimeiroAcessoPage'
 import AccessDeniedPage from '@/pages/auth/AccessDeniedPage'
-import DashboardPage from '@/pages/DashboardPage'
 import DashboardExecutivoPage from '@/pages/dashboard/DashboardPage'
 import UserManagementPage from '@/pages/admin/UserManagementPage'
+import SecretariaManagementPage from '@/pages/admin/SecretariaManagementPage'
 import AuditPage from '@/pages/admin/AuditPage'
 import NovaOrdemPage from '@/pages/secretaria/NovaOrdemPage'
 import MinhasOrdensPage from '@/pages/secretaria/MinhasOrdensPage'
@@ -112,7 +111,7 @@ export const router = createBrowserRouter([
         path: 'admin/secretarias',
         element: (
           <Guard roles={['admin']}>
-            <DashboardPage />
+            <SecretariaManagementPage />
           </Guard>
         ),
       },
@@ -223,11 +222,11 @@ export const router = createBrowserRouter([
         ),
       },
 
-      // --- Dashboard executivo (US-011) ---
+      // --- Dashboard executivo (US-011) — somente gabinete e admin (CLAUDE.md §7) ---
       {
         path: 'dashboard',
         element: (
-          <Guard roles={['gabinete', 'secretaria', 'admin']}>
+          <Guard roles={['gabinete', 'admin']}>
             <DashboardExecutivoPage />
           </Guard>
         ),
