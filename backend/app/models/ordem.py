@@ -267,6 +267,11 @@ class Ordem(Base):
         lazy="noload",
         foreign_keys=[atestado_por],
     )
+    notifications: Mapped[list["NotificationLog"]] = relationship(  # type: ignore[name-defined]
+        "NotificationLog",
+        back_populates="ordem",
+        lazy="noload",
+    )
 
     # ------------------------------------------------------------------
     # Índices — CLAUDE.md §8: índices obrigatórios

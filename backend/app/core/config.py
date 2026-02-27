@@ -27,5 +27,18 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
+    # E-mail (US-014) — opcionais; ausência desabilita envio silenciosamente
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@prefeitura.gov.br"
+    SMTP_STARTTLS: bool = True
+
+    @property
+    def smtp_enabled(self) -> bool:
+        """Retorna True somente se SMTP estiver completamente configurado."""
+        return bool(self.SMTP_HOST and self.SMTP_USER and self.SMTP_PASSWORD)
+
 
 settings = Settings()

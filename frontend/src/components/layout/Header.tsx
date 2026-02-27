@@ -12,7 +12,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Menu, LogOut, User } from 'lucide-react'
+import { Bell, Menu, LogOut, User } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -96,6 +96,14 @@ export default function Header({ title }: HeaderProps) {
                 </Badge>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => navigate('/configuracoes/notificacoes')}
+              className="cursor-pointer"
+            >
+              <Bell className="mr-2 h-4 w-4" aria-hidden="true" />
+              Preferências de notificação
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={handleLogout}

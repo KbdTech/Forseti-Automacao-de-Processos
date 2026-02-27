@@ -52,6 +52,7 @@ import PagamentoPage from '@/pages/tesouraria/PagamentoPage'
 import OrdensPagasPage from '@/pages/tesouraria/OrdensPagasPage'
 import AppLayout from '@/components/layout/AppLayout'
 import RoleGuard from '@/components/layout/RoleGuard'
+import NotificationPreferencesPage from '@/pages/settings/NotificationPreferencesPage'
 
 // ---------------------------------------------------------------------------
 // Wrapper helper para reduzir repetição de RoleGuard nas rotas filhas
@@ -228,6 +229,16 @@ export const router = createBrowserRouter([
         element: (
           <Guard roles={['gabinete', 'secretaria', 'admin']}>
             <DashboardExecutivoPage />
+          </Guard>
+        ),
+      },
+
+      // --- Configurações (US-014) — acessível por qualquer usuário autenticado ---
+      {
+        path: 'configuracoes/notificacoes',
+        element: (
+          <Guard roles={['secretaria', 'gabinete', 'controladoria', 'contabilidade', 'tesouraria', 'admin']}>
+            <NotificationPreferencesPage />
           </Guard>
         ),
       },

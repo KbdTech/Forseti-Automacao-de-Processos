@@ -13,7 +13,7 @@ from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_client_ip, get_current_user, require_role
@@ -222,6 +222,7 @@ async def executar_acao(
     current_user: AnyAuthenticated,
     db: Annotated[AsyncSession, Depends(get_db)],
     client_ip: Annotated[str | None, Depends(get_client_ip)],
+    background_tasks: BackgroundTasks,
 ) -> OrdemResponse:
     """Executa uma ação de workflow sobre uma ordem.
 
@@ -298,4 +299,13 @@ async def executar_acao(
     from app.services.ordem_service import OrdemService
     svc = OrdemService()
     ordem_com_rel = await svc._load_with_relations(db, ordem.id)
+
+    # US-014: dispara notificação assíncrona após transição bem-sucedida
+    from app.services.notification_service import notification_service
+    background_tasks.add_task(
+        notification_service.notify_workflow_transition,
+        ordem_id=ordem.id,
+        acao=acao,
+    )
+
     return svc._build_response(ordem_com_rel)  # type: ignore[arg-type]

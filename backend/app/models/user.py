@@ -178,6 +178,11 @@ class User(Base):
         back_populates="user",
         lazy="noload",
     )
+    notification_prefs: Mapped[list["UserNotificationPrefs"]] = relationship(  # type: ignore[name-defined]
+        "UserNotificationPrefs",
+        back_populates="user",
+        lazy="noload",
+    )
 
     # ------------------------------------------------------------------
     # Índices — conforme requisito do CLAUDE.md
