@@ -50,6 +50,7 @@ from app.models.enums import (
 if TYPE_CHECKING:
     from app.models.secretaria import Secretaria
     from app.models.user import User
+    from app.models.documento import OrdemDocumento  # US-015
 
 
 class Ordem(Base):
@@ -271,6 +272,14 @@ class Ordem(Base):
         "NotificationLog",
         back_populates="ordem",
         lazy="noload",
+    )
+    # US-015: documentos anexados a esta ordem (PDF, JPEG, PNG)
+    documentos: Mapped[list["OrdemDocumento"]] = relationship(
+        "OrdemDocumento",
+        back_populates="ordem",
+        lazy="noload",
+        foreign_keys="OrdemDocumento.ordem_id",
+        order_by="OrdemDocumento.created_at",
     )
 
     # ------------------------------------------------------------------

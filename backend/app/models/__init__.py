@@ -11,6 +11,7 @@ Ordem de importação respeita dependências de FK:
   5. ordem        (FK → secretaria, user)
   6. ordem_historico (FK → ordem, user)
   7. notification (FK → ordem, user) — US-014
+  8. documento    (FK → ordem, user) — US-015
 """
 
 from app.models.enums import (  # noqa: F401
@@ -29,6 +30,7 @@ from app.models.notification import (  # noqa: F401
     NotificationStatusEnum,
     UserNotificationPrefs,
 )
+from app.models.documento import OrdemDocumento  # noqa: F401  — US-015
 
 __all__ = [
     # ENUMs Sprint 2
@@ -49,4 +51,6 @@ __all__ = [
     "NotificationLog",
     "NotificationStatusEnum",
     "UserNotificationPrefs",
+    # Sprint 7 — US-015
+    "OrdemDocumento",
 ]

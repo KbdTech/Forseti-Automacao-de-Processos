@@ -30,6 +30,7 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.audit import AuditLog
     from app.models.secretaria import Secretaria
+    from app.models.documento import OrdemDocumento  # US-015
 
 
 # ---------------------------------------------------------------------------
@@ -181,6 +182,13 @@ class User(Base):
     notification_prefs: Mapped[list["UserNotificationPrefs"]] = relationship(  # type: ignore[name-defined]
         "UserNotificationPrefs",
         back_populates="user",
+        lazy="noload",
+    )
+    # US-015: documentos enviados por este usuário
+    documentos_enviados: Mapped[list["OrdemDocumento"]] = relationship(
+        "OrdemDocumento",
+        back_populates="uploader",
+        foreign_keys="OrdemDocumento.uploaded_by",
         lazy="noload",
     )
 
