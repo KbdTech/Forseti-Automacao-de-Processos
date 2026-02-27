@@ -73,6 +73,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 import { getOrdem, updateOrdem, executeAcao } from '@/services/ordensService'
 import { listSecretarias } from '@/services/secretariasService'
+import { DocumentList } from '@/components/ordens/DocumentList'
+import { DocumentUploader } from '@/components/ordens/DocumentUploader'
 import { extractApiError } from '@/utils/formatters'
 import {
   TIPO_ORDEM_LABELS,
@@ -360,6 +362,23 @@ export default function EditarOrdemPage() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* US-015: documentos anexados — upload disponível pois status é DEVOLVIDA_PARA_ALTERACAO */}
+      {id && (
+        <div className="rounded-lg border p-4 space-y-4 mb-6">
+          <p className="text-sm font-semibold">Documentos anexados</p>
+          <DocumentList
+            ordemId={id}
+            currentUserId={ordem?.criado_por}
+            currentUserRole="secretaria"
+          />
+          <Separator />
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Anexar novo documento
+          </p>
+          <DocumentUploader ordemId={id} />
         </div>
       )}
 

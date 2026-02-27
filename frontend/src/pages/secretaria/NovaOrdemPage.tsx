@@ -39,6 +39,7 @@ import type { AxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DocumentUploader } from '@/components/ordens/DocumentUploader'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
@@ -248,6 +249,14 @@ function SuccessScreen({
         </Button>
         <Button onClick={onNova}>Criar Nova Ordem</Button>
       </div>
+
+      {/* US-015: upload de documentos logo após criação */}
+      <div className="w-full max-w-lg rounded-lg border p-4 text-left">
+        <p className="text-sm font-medium mb-3">
+          Anexar documentos à ordem (opcional)
+        </p>
+        <DocumentUploader ordemId={ordem.id} />
+      </div>
     </div>
   )
 }
@@ -389,7 +398,7 @@ export default function NovaOrdemPage() {
           { n: 1, label: 'Identificação', Icon: FileText },
           { n: 2, label: 'Detalhes', Icon: ClipboardList },
           { n: 3, label: 'Revisão', Icon: CircleDollarSign },
-        ].map(({ n, label, Icon }, idx, arr) => (
+        ].map(({ n, label }, idx, arr) => (
           <div key={n} className="flex items-center flex-1">
             <div className="flex flex-col items-center gap-1">
               <StepIndicator step={n} current={step} />

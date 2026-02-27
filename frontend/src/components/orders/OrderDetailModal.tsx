@@ -33,10 +33,24 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { StatusBadge } from '@/components/workflow/StatusBadge'
+import { DocumentList } from '@/components/ordens/DocumentList'
+import { DocumentUploader } from '@/components/ordens/DocumentUploader'
 import { cn } from '@/lib/utils'
 import { getOrdem } from '@/services/ordensService'
+import { useAuthStore } from '@/stores/authStore'
 import { TIPO_ORDEM_LABELS, PRIORIDADE_CONFIG, PRIORIDADE_LABELS } from '@/utils/constants'
 import type { TipoOrdem, Prioridade, OrdemHistorico, StatusOrdem } from '@/types/ordem'
+
+// US-015 RN: statuses após os quais documentos são somente-leitura
+const STATUSES_IMUTAVEIS: StatusOrdem[] = [
+  'AGUARDANDO_CONTROLADORIA',
+  'AGUARDANDO_EMPENHO',
+  'AGUARDANDO_EXECUCAO',
+  'AGUARDANDO_ATESTO',
+  'AGUARDANDO_LIQUIDACAO',
+  'AGUARDANDO_PAGAMENTO',
+  'PAGA',
+]
 
 // ---------------------------------------------------------------------------
 // Props
@@ -206,6 +220,56 @@ function HistoricoEntry({ entry }: { entry: OrdemHistorico }) {
 }
 
 // ---------------------------------------------------------------------------
+// Sub-componente: Tab de Documentos (US-015)
+// ---------------------------------------------------------------------------
+
+interface DocumentosTabContentProps {
+  orderId: string | null
+  ordemStatus: StatusOrdem | null
+}
+
+function DocumentosTabContent({ orderId, ordemStatus }: DocumentosTabContentProps) {
+  const user = useAuthStore((s) => s.user)
+  const canUpload =
+    (user?.role === 'secretaria' || user?.role === 'admin') &&
+    ordemStatus !== null &&
+    !STATUSES_IMUTAVEIS.includes(ordemStatus)
+
+  return (
+    <TabsContent value="documentos" className="flex-1 overflow-y-auto mt-2 pr-1">
+      {orderId ? (
+        <div className="space-y-4">
+          {canUpload && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Anexar novo documento
+              </p>
+              <DocumentUploader ordemId={orderId} disabled={false} />
+              <Separator />
+            </div>
+          )}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+              Documentos anexados
+            </p>
+            <DocumentList
+              ordemId={orderId}
+              currentUserId={user?.id}
+              currentUserRole={user?.role}
+              readOnly={!canUpload}
+            />
+          </div>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          Selecione uma ordem para ver os documentos.
+        </p>
+      )}
+    </TabsContent>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------------------
 
@@ -267,6 +331,7 @@ export function OrderDetailModal({ orderId, onClose, renderActions }: OrderDetai
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
           </TabsList>
 
           {/* ---------------------------------------------------------------
@@ -394,6 +459,11 @@ export function OrderDetailModal({ orderId, onClose, renderActions }: OrderDetai
               </p>
             )}
           </TabsContent>
+
+          {/* ---------------------------------------------------------------
+              Tab: Documentos — US-015
+          --------------------------------------------------------------- */}
+          <DocumentosTabContent orderId={orderId} ordemStatus={ordem?.status ?? null} />
         </Tabs>
 
         {/* Slot de ações de workflow — injetado pela página pai (ex: ActionPanel do Gabinete) */}
