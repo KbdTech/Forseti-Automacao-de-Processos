@@ -20,8 +20,30 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_HOURS: int = 8
     JWT_REFRESH_EXPIRATION_HOURS: int = 24
 
+    # Autenticação — controle de bloqueio por tentativas (US-001 RN-1)
+    MAX_LOGIN_ATTEMPTS: int = 5
+    LOCKOUT_DURATION_MINUTES: int = 15
+
     # CORS
     BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:5173"]
+
+    # E-mail (US-014) — opcionais; ausência desabilita envio silenciosamente
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@prefeitura.gov.br"
+    SMTP_STARTTLS: bool = True
+
+    # Supabase Storage (US-015)
+    SUPABASE_STORAGE_BUCKET: str = "ordem-documentos"
+    SIGNED_URL_TTL_SECONDS: int = 900        # 15 minutos
+    MAX_UPLOAD_SIZE_BYTES: int = 10_485_760  # 10 MB
+
+    @property
+    def smtp_enabled(self) -> bool:
+        """Retorna True somente se SMTP estiver completamente configurado."""
+        return bool(self.SMTP_HOST and self.SMTP_USER and self.SMTP_PASSWORD)
 
 
 settings = Settings()
