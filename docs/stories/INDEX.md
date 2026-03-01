@@ -86,12 +86,12 @@
 
 | ID | Arquivo | Título | Status |
 |----|---------|--------|--------|
-| BUG-001 | [S7.1-BUG001-formatacao-valor.story.md](./S7.1-BUG001-formatacao-valor.story.md) | Formatação de campos de valor monetário | Ready |
-| UX-001 | [S7.2-UX001-fechar-modal-apos-acao.story.md](./S7.2-UX001-fechar-modal-apos-acao.story.md) | Fechar modal após ação confirmada | Ready |
-| US-021 | [S7.3-US021-minhas-ordens-readonly.story.md](./S7.3-US021-minhas-ordens-readonly.story.md) | Minhas Ordens: modo somente leitura | Ready |
-| US-017 | [S7.4-US017-upload-documento-empenho.story.md](./S7.4-US017-upload-documento-empenho.story.md) | Upload obrigatório de documento de empenho | Ready |
-| US-018 | [S7.5-US018-melhorias-atesto-nf.story.md](./S7.5-US018-melhorias-atesto-nf.story.md) | Melhorias no atesto: NF + docs extras + DLD | Ready |
-| US-020 | [S7.6-US020-upload-comprovante-pagamento.story.md](./S7.6-US020-upload-comprovante-pagamento.story.md) | Upload opcional de comprovante de pagamento | Ready |
+| BUG-001 | [S7.1-BUG001-formatacao-valor.story.md](./S7.1-BUG001-formatacao-valor.story.md) | Formatação de campos de valor monetário | Done |
+| UX-001 | [S7.2-UX001-fechar-modal-apos-acao.story.md](./S7.2-UX001-fechar-modal-apos-acao.story.md) | Fechar modal após ação confirmada | Done |
+| US-021 | [S7.3-US021-minhas-ordens-readonly.story.md](./S7.3-US021-minhas-ordens-readonly.story.md) | Minhas Ordens: modo somente leitura | Done |
+| US-017 | [S7.4-US017-upload-documento-empenho.story.md](./S7.4-US017-upload-documento-empenho.story.md) | Upload obrigatório de documento de empenho | Done |
+| US-018 | [S7.5-US018-melhorias-atesto-nf.story.md](./S7.5-US018-melhorias-atesto-nf.story.md) | Melhorias no atesto: NF + docs extras + DLD | Done |
+| US-020 | [S7.6-US020-upload-comprovante-pagamento.story.md](./S7.6-US020-upload-comprovante-pagamento.story.md) | Upload opcional de comprovante de pagamento | Done |
 
 ---
 
@@ -114,7 +114,7 @@
 | S4 | US-008, US-009, US-010 | Pipeline Financeiro | ✅ Done |
 | S5 | US-011, US-012 | Dashboard + Auditoria | ✅ Done |
 | S6 | US-013, US-014 | Admin + Notificações | ✅ Done |
-| S7 | BUG-001, UX-001, US-017, US-018, US-020, US-021 | Melhorias Pipeline + UX | 🔄 Em andamento |
+| S7 | BUG-001, UX-001, US-017, US-018, US-020, US-021 | Melhorias Pipeline + UX | ✅ Done |
 | S8 | US-019 | Assinatura Liquidação | 📋 Planejada |
 
 ---
