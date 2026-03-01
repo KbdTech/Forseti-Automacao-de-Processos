@@ -59,6 +59,13 @@ export const STATUS_CONFIG: Record<
     text: 'text-blue-700',
     border: 'border-blue-200',
   },
+  // US-019: amarelo — requer ação da secretaria (assinar documento de liquidação)
+  AGUARDANDO_ASSINATURA_SECRETARIA: {
+    label: 'Aguardando Assinatura',
+    bg: 'bg-yellow-50',
+    text: 'text-yellow-700',
+    border: 'border-yellow-200',
+  },
   AGUARDANDO_PAGAMENTO: {
     label: 'Aguardando Pagamento',
     bg: 'bg-blue-50',

@@ -44,6 +44,8 @@ export type SidebarIconKey =
   | 'ScrollText'
   | 'Users'
   | 'Landmark'
+  // US-019: item de assinatura de liquidação da secretaria
+  | 'PenLine'
 
 /** Definição de um item de menu na sidebar. */
 export interface SidebarItem {
@@ -89,6 +91,14 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     label: 'Atesto de NF',
     path: '/secretaria/atesto',
     iconKey: 'CheckSquare',
+    roles: ['secretaria', 'admin'],
+  },
+  // US-019: pipeline de assinatura do documento de liquidação pela secretaria
+  {
+    key: 'assinaturas-liquidacao',
+    label: 'Liquidações para Assinar',
+    path: '/secretaria/assinaturas',
+    iconKey: 'PenLine',
     roles: ['secretaria', 'admin'],
   },
 

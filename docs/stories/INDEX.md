@@ -100,7 +100,7 @@
 
 | ID | Arquivo | Título | Status |
 |----|---------|--------|--------|
-| US-019 | [S8.1-US019-assinatura-secretaria-liquidacao.story.md](./S8.1-US019-assinatura-secretaria-liquidacao.story.md) | Assinatura da secretaria na liquidação | Draft |
+| US-019 | [S8.1-US019-assinatura-secretaria-liquidacao.story.md](./S8.1-US019-assinatura-secretaria-liquidacao.story.md) | Assinatura da secretaria na liquidação | Done |
 
 ---
 
@@ -115,7 +115,7 @@
 | S5 | US-011, US-012 | Dashboard + Auditoria | ✅ Done |
 | S6 | US-013, US-014 | Admin + Notificações | ✅ Done |
 | S7 | BUG-001, UX-001, US-017, US-018, US-020, US-021 | Melhorias Pipeline + UX | ✅ Done |
-| S8 | US-019 | Assinatura Liquidação | 📋 Planejada |
+| S8 | US-019 | Assinatura Liquidação | ✅ Done |
 
 ---
 

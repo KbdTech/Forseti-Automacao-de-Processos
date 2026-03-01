@@ -22,6 +22,7 @@ import {
   FileText,
   Landmark,
   LayoutDashboard,
+  PenLine,
   Receipt,
   RotateCcw,
   ScrollText,
@@ -55,6 +56,7 @@ const ICON_MAP: Record<SidebarIconKey, LucideIcon> = {
   ScrollText,
   Users,
   Landmark,
+  PenLine,
 }
 
 // ---------------------------------------------------------------------------

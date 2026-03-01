@@ -76,6 +76,8 @@ class StatusOrdemEnum(str, enum.Enum):
 
     Diagrama de transições completo em CLAUDE.md §6.
     Terminal states: PAGA (US-010 RN-53), CANCELADA (US-005 RN-29).
+
+    US-019: adiciona AGUARDANDO_ASSINATURA_SECRETARIA entre liquidação e pagamento.
     """
 
     AGUARDANDO_GABINETE = "AGUARDANDO_GABINETE"
@@ -88,6 +90,8 @@ class StatusOrdemEnum(str, enum.Enum):
     AGUARDANDO_ATESTO = "AGUARDANDO_ATESTO"
     EXECUCAO_COM_PENDENCIA = "EXECUCAO_COM_PENDENCIA"
     AGUARDANDO_LIQUIDACAO = "AGUARDANDO_LIQUIDACAO"
+    # US-019: novo status intermediário — secretaria assina o documento de liquidação
+    AGUARDANDO_ASSINATURA_SECRETARIA = "AGUARDANDO_ASSINATURA_SECRETARIA"
     AGUARDANDO_PAGAMENTO = "AGUARDANDO_PAGAMENTO"
     PAGA = "PAGA"
     CANCELADA = "CANCELADA"

@@ -22,6 +22,7 @@
  *     /secretaria/devolvidas  → DevolvidasPage             [secretaria, admin]
  *     /secretaria/ordens/:id/editar → EditarOrdemPage      [secretaria]
  *     /secretaria/atesto      → AtestoPage                 [secretaria, admin]
+ *     /secretaria/assinaturas → AssinaturaLiquidacaoPage   [secretaria, admin]
  *     /dashboard              → DashboardExecutivoPage     [gabinete, admin]
  *     /audit                  → AuditPage                  [admin]
  *     /configuracoes/notificacoes → NotificationPreferencesPage [todos]
@@ -46,6 +47,7 @@ import EmpenhoPage from '@/pages/contabilidade/EmpenhoPage'
 import DevolvidasPage from '@/pages/secretaria/DevolvidasPage'
 import EditarOrdemPage from '@/pages/secretaria/EditarOrdemPage'
 import AtestoPage from '@/pages/secretaria/AtestoPage'
+import AssinaturaLiquidacaoPage from '@/pages/secretaria/AssinaturaLiquidacaoPage'
 import LiquidacaoPage from '@/pages/contabilidade/LiquidacaoPage'
 import PagamentoPage from '@/pages/tesouraria/PagamentoPage'
 import OrdensPagasPage from '@/pages/tesouraria/OrdensPagasPage'
@@ -218,6 +220,15 @@ export const router = createBrowserRouter([
         element: (
           <Guard roles={['secretaria', 'admin']}>
             <AtestoPage />
+          </Guard>
+        ),
+      },
+      // US-019: pipeline de assinatura do documento de liquidação
+      {
+        path: 'secretaria/assinaturas',
+        element: (
+          <Guard roles={['secretaria', 'admin']}>
+            <AssinaturaLiquidacaoPage />
           </Guard>
         ),
       },

@@ -16,7 +16,7 @@ export type Prioridade = 'normal' | 'alta' | 'urgente'
 
 /**
  * US-003 RN-20 e seção 6 do CLAUDE.md: máquina de estados das ordens.
- * 13 status possíveis.
+ * 14 status possíveis (US-019 adicionou AGUARDANDO_ASSINATURA_SECRETARIA).
  */
 export type StatusOrdem =
   | 'AGUARDANDO_GABINETE'
@@ -25,6 +25,8 @@ export type StatusOrdem =
   | 'AGUARDANDO_EXECUCAO'
   | 'AGUARDANDO_ATESTO'
   | 'AGUARDANDO_LIQUIDACAO'
+  /** US-019: status intermediário — secretaria assina documento de liquidação. */
+  | 'AGUARDANDO_ASSINATURA_SECRETARIA'
   | 'AGUARDANDO_PAGAMENTO'
   | 'DEVOLVIDA_PARA_ALTERACAO'
   | 'AGUARDANDO_DOCUMENTACAO'

@@ -2,20 +2,23 @@
  * LiquidacaoModal — Dialog de liquidação de despesa.
  *
  * US-010: Liquidação pela Contabilidade.
+ * US-019: upload obrigatório do documento de liquidação; após liquidar,
+ *         ordem vai para AGUARDANDO_ASSINATURA_SECRETARIA (não mais direto para pagamento).
  *
  * Features:
  *   - Card resumo (protocolo, valor empenhado, Nº empenho, Nº NF, data atesto)
  *   - Campo valor_liquidado (número > 0)
  *   - Campo data_liquidacao (date, não futura)
- *   - Campo observação (opcional)
- *   - PATCH { acao: 'liquidar', valor_liquidado, data_liquidacao, observacao? }
+ *   - Upload obrigatório do documento de liquidação (US-019)
+ *   - PATCH { acao: 'liquidar', valor_liquidado, data_liquidacao }
  *
  * US-010 RN-50: registrar data e valor liquidado.
+ * US-019: sem campo observação; documento enviado antes da ação.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, Loader2 } from 'lucide-react'
+import { CheckCircle, Loader2, Paperclip, X } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -24,7 +27,6 @@ import type { AxiosError } from 'axios'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -35,6 +37,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { getOrdem, executeAcao } from '@/services/ordensService'
+import { uploadDocumento } from '@/services/documentosService'
 import { extractApiError, parseBRL, formatCurrencyInput } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
@@ -75,6 +78,7 @@ interface LiquidacaoModalProps {
 
 export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModalProps) {
   const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: ordem } = useQuery({
     queryKey: ['ordem', orderId],
@@ -85,7 +89,7 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
 
   const [valorLiquidado, setValorLiquidado] = useState('')
   const [dataLiquidacao, setDataLiquidacao] = useState('')
-  const [observacao, setObservacao] = useState('')
+  const [documento, setDocumento] = useState<File | null>(null) // US-019 — obrigatório
 
   useEffect(() => {
     if (orderId) {
@@ -94,32 +98,41 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
         ordem?.valor_empenhado ? formatCurrencyInput(Number(ordem.valor_empenhado)) : '',
       )
       setDataLiquidacao(todayISODate())
-      setObservacao('')
+      setDocumento(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }, [orderId, ordem?.valor_empenhado])
 
   function handleClose() {
     setValorLiquidado('')
     setDataLiquidacao('')
-    setObservacao('')
+    setDocumento(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     onClose()
   }
 
   // BUG-001: parseBRL converte "15.000,00" → 15000
   const valorNum = parseBRL(valorLiquidado)
-  const isValid = valorNum > 0 && dataLiquidacao.length > 0
+  // US-019: documento obrigatório
+  const isValid = valorNum > 0 && dataLiquidacao.length > 0 && documento !== null
 
   const mutation = useMutation({
-    mutationFn: () =>
-      executeAcao(orderId!, {
+    mutationFn: async () => {
+      // US-019 passo 1 — upload do documento de liquidação antes de registrar a ação
+      if (documento) {
+        await uploadDocumento(orderId!, { file: documento, descricao: 'LIQUIDACAO' })
+      }
+      // Passo 2 — registrar liquidação (sem observação — US-019)
+      return executeAcao(orderId!, {
         acao: 'liquidar',
         valor_liquidado: valorNum,
         data_liquidacao: dataLiquidacao,
-        observacao: observacao.trim() || undefined,
-      }),
+      })
+    },
     onSuccess: () => {
+      // US-019: status vai para AGUARDANDO_ASSINATURA_SECRETARIA
       toast.success('Liquidação registrada', {
-        description: `Valor ${formatBRL(valorNum)} liquidado com sucesso.`,
+        description: `Valor ${formatBRL(valorNum)} liquidado. Aguardando assinatura da secretaria.`,
       })
       queryClient.invalidateQueries({ queryKey: ['ordens'] })
       queryClient.invalidateQueries({ queryKey: ['ordem', orderId] })
@@ -214,17 +227,49 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
             />
           </div>
 
-          {/* Observação (opcional) */}
+          {/* Documento de liquidação — US-019 (obrigatório) */}
           <div className="space-y-1.5">
-            <Label htmlFor="obs-liquidacao">Observação (opcional)</Label>
-            <Textarea
-              id="obs-liquidacao"
-              placeholder="Informações adicionais sobre a liquidação..."
-              rows={3}
-              value={observacao}
-              onChange={(e) => setObservacao(e.target.value)}
+            <Label>
+              Documento de Liquidação <span className="text-destructive">*</span>
+            </Label>
+            <div
+              className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              style={mutation.isPending ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+              onClick={() => !documento && fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className={documento ? 'text-foreground flex-1 truncate' : 'text-muted-foreground flex-1'}>
+                {documento ? documento.name : 'Clique para selecionar (PDF, JPEG, PNG — máx 10 MB)'}
+              </span>
+              {documento && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setDocumento(null)
+                    if (fileInputRef.current) fileInputRef.current.value = ''
+                  }}
+                  disabled={mutation.isPending}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Remover documento"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              className="hidden"
+              onChange={(e) => setDocumento(e.target.files?.[0] ?? null)}
               disabled={mutation.isPending}
             />
+            {!documento && (
+              <p className="text-xs text-muted-foreground">
+                Anexe o documento de liquidação para continuar.
+              </p>
+            )}
           </div>
         </div>
 

@@ -81,9 +81,9 @@ def make_db(ordem: MagicMock | None) -> AsyncMock:
 # ---------------------------------------------------------------------------
 
 
-def test_transitions_has_14_entries() -> None:
-    """CLAUDE.md §6: a tabela de transições deve conter exatamente 14 entradas."""
-    assert len(WorkflowEngine.TRANSITIONS) == 14
+def test_transitions_has_15_entries() -> None:
+    """US-019: a tabela de transições deve conter exatamente 15 entradas (14 originais + assinar_liquidacao)."""
+    assert len(WorkflowEngine.TRANSITIONS) == 15
 
 
 def test_all_terminal_states_are_not_in_transitions() -> None:
@@ -96,8 +96,10 @@ def test_all_terminal_states_are_not_in_transitions() -> None:
 
 
 def test_secretaria_scoped_actions_set() -> None:
-    """As 5 ações que exigem verificação de secretaria estão no frozenset."""
-    esperadas = {"reenviar", "enviar_documentacao", "iniciar_atesto", "atestar", "recusar_atesto"}
+    """As 6 ações que exigem verificação de secretaria estão no frozenset.
+    US-019: adiciona 'assinar_liquidacao'.
+    """
+    esperadas = {"reenviar", "enviar_documentacao", "iniciar_atesto", "atestar", "recusar_atesto", "assinar_liquidacao"}
     assert esperadas == WorkflowEngine._SECRETARIA_SCOPED_ACTIONS
 
 

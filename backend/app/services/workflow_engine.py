@@ -176,11 +176,21 @@ class WorkflowEngine:
             # US-009 RN-47: descrição de não conformidade obrigatória
         ),
         # ------------------------------------------------------------------
-        # Contabilidade — liquidação (US-010)
+        # Contabilidade — liquidação (US-010 / US-019)
+        # US-019: após liquidar, ordem aguarda assinatura da secretaria
+        # antes de seguir para pagamento.
         # ------------------------------------------------------------------
         (StatusOrdemEnum.AGUARDANDO_LIQUIDACAO, "liquidar"): _TransitionConfig(
-            novo_status=StatusOrdemEnum.AGUARDANDO_PAGAMENTO,
+            novo_status=StatusOrdemEnum.AGUARDANDO_ASSINATURA_SECRETARIA,
             roles_permitidos=(RoleEnum.contabilidade,),
+        ),
+        # ------------------------------------------------------------------
+        # Secretaria — assinatura do documento de liquidação (US-019)
+        # ------------------------------------------------------------------
+        (StatusOrdemEnum.AGUARDANDO_ASSINATURA_SECRETARIA, "assinar_liquidacao"): _TransitionConfig(
+            novo_status=StatusOrdemEnum.AGUARDANDO_PAGAMENTO,
+            roles_permitidos=(RoleEnum.secretaria,),
+            # US-019: secretaria da ordem assina o documento de liquidação
         ),
         # ------------------------------------------------------------------
         # Tesouraria — pagamento final (US-010)
@@ -202,6 +212,7 @@ class WorkflowEngine:
         "iniciar_atesto",      # US-009: secretaria da ordem (admin isento)
         "atestar",             # US-009 RN-46: somente a secretaria responsável
         "recusar_atesto",      # US-009: somente a secretaria responsável
+        "assinar_liquidacao",  # US-019: somente a secretaria da ordem
     })
 
     async def execute_transition(
