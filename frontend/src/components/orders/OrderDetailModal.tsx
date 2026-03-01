@@ -74,6 +74,11 @@ interface OrderDetailModalProps {
     status: StatusOrdem,
     onActionComplete: () => void,
   ) => React.ReactNode
+  /**
+   * US-021: quando true, desabilita upload de documentos independente do perfil/status.
+   * Usado em MinhasOrdensPage para exibição somente leitura.
+   */
+  readOnly?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -232,11 +237,14 @@ interface DocumentosTabContentProps {
   orderId: string | null
   ordemStatus: StatusOrdem | null
   assinaturaGovbr: boolean
+  /** US-021: quando true, desabilita upload independente do perfil/status */
+  readOnly?: boolean
 }
 
-function DocumentosTabContent({ orderId, ordemStatus, assinaturaGovbr }: DocumentosTabContentProps) {
+function DocumentosTabContent({ orderId, ordemStatus, assinaturaGovbr, readOnly }: DocumentosTabContentProps) {
   const user = useAuthStore((s) => s.user)
   const canUpload =
+    !readOnly &&
     (user?.role === 'secretaria' || user?.role === 'admin') &&
     ordemStatus !== null &&
     !STATUSES_IMUTAVEIS.includes(ordemStatus)
@@ -291,7 +299,7 @@ function DocumentosTabContent({ orderId, ordemStatus, assinaturaGovbr }: Documen
 // Componente principal
 // ---------------------------------------------------------------------------
 
-export function OrderDetailModal({ orderId, onClose, renderActions }: OrderDetailModalProps) {
+export function OrderDetailModal({ orderId, onClose, renderActions, readOnly }: OrderDetailModalProps) {
   const { data: ordem, isLoading, isError, refetch } = useQuery({
     queryKey: ['ordem', orderId],
     queryFn: () => getOrdem(orderId!),
@@ -485,6 +493,7 @@ export function OrderDetailModal({ orderId, onClose, renderActions }: OrderDetai
             orderId={orderId}
             ordemStatus={ordem?.status ?? null}
             assinaturaGovbr={ordem?.assinatura_govbr ?? false}
+            readOnly={readOnly}
           />
         </Tabs>
 

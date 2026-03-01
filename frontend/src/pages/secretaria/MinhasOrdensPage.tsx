@@ -340,10 +340,11 @@ export default function MinhasOrdensPage() {
         </div>
       )}
 
-      {/* Modal de detalhe */}
+      {/* Modal de detalhe — US-021: somente leitura (sem upload de documentos) */}
       <OrderDetailModal
         orderId={selectedId}
         onClose={() => setSelectedId(null)}
+        readOnly
       />
     </div>
   )

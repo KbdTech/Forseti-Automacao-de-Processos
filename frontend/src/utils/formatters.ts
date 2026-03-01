@@ -45,3 +45,31 @@ export function formatBRL(value: number | null | undefined): string {
   if (value == null) return '—'
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
+
+// ---------------------------------------------------------------------------
+// Entrada de moeda — BUG-001
+// ---------------------------------------------------------------------------
+
+/**
+ * Converte string BRL do usuário para número.
+ * Aceita: "R$ 15.000,00", "15.000,00", "15000,00", "15000.00", "15000".
+ */
+export function parseBRL(value: string): number {
+  if (!value) return 0
+  const cleaned = value
+    .replace(/R\$\s?/g, '')  // Remove símbolo de moeda
+    .replace(/\./g, '')        // Remove separador de milhar
+    .replace(',', '.')         // Converte decimal BR (,) → EN (.)
+    .trim()
+  const num = parseFloat(cleaned)
+  return isNaN(num) ? 0 : num
+}
+
+/**
+ * Formata número como string BRL sem símbolo para campos de input.
+ * Ex.: 15000 → "15.000,00"
+ */
+export function formatCurrencyInput(value: number): string {
+  if (!value) return ''
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}

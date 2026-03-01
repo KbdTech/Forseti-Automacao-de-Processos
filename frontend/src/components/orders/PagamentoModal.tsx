@@ -18,9 +18,9 @@
  * US-010 RN-53: após PAGA, ordem é somente-leitura (garantido pelo back-end).
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, AlertTriangle, Loader2 } from 'lucide-react'
+import { CheckCircle, AlertTriangle, Loader2, Paperclip, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
 
@@ -46,8 +46,9 @@ import {
 } from '@/components/ui/dialog'
 
 import { getOrdem, executeAcao } from '@/services/ordensService'
+import { uploadDocumento } from '@/services/documentosService'
 import type { AcaoPayload } from '@/types/ordem'
-import { extractApiError } from '@/utils/formatters'
+import { extractApiError, parseBRL, formatCurrencyInput } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -81,6 +82,7 @@ type FormaPagamento = 'transferencia' | 'cheque' | 'pix'
 
 export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalProps) {
   const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)  // US-020
 
   const { data: ordem } = useQuery({
     queryKey: ['ordem', orderId],
@@ -93,14 +95,18 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
   const [dataPagamento, setDataPagamento] = useState('')
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento | ''>('')
   const [observacao, setObservacao] = useState('')
+  const [comprovante, setComprovante] = useState<File | null>(null)  // US-020
 
   useEffect(() => {
     if (orderId) {
-      // Pré-preenche com valor_liquidado
-      setValorPago(ordem?.valor_liquidado ? Number(ordem.valor_liquidado).toFixed(2) : '')
+      // BUG-001: formatCurrencyInput em vez de .toFixed(2)
+      setValorPago(
+        ordem?.valor_liquidado ? formatCurrencyInput(Number(ordem.valor_liquidado)) : '',
+      )
       setDataPagamento(todayISODate())
       setFormaPagamento('')
       setObservacao('')
+      setComprovante(null)
     }
   }, [orderId, ordem?.valor_liquidado])
 
@@ -109,10 +115,13 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
     setDataPagamento('')
     setFormaPagamento('')
     setObservacao('')
+    setComprovante(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     onClose()
   }
 
-  const valorNum = parseFloat(valorPago.replace(',', '.')) || 0
+  // BUG-001: parseBRL converte "15.000,00" → 15000
+  const valorNum = parseBRL(valorPago)
   const valorLiquidado = Number(ordem?.valor_liquidado ?? 0)
 
   // Alerta de divergência — US-010 RN-52
@@ -129,7 +138,11 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
     (!obsRequired || observacao.trim().length > 0)
 
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
+      // US-020: upload do comprovante antes de registrar pagamento (se informado)
+      if (comprovante) {
+        await uploadDocumento(orderId!, { file: comprovante, descricao: 'COMPROVANTE_PAGAMENTO' })
+      }
       const payload: AcaoPayload = {
         acao: 'pagar',
         valor_pago: valorNum,
@@ -219,12 +232,12 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
                 Valor liquidado: {formatBRL(valorLiquidado)}
               </p>
             )}
+            {/* BUG-001: type="text" evita problema de vírgula como decimal */}
             <Input
               id="valor-pago"
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="0.00"
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
               value={valorPago}
               onChange={(e) => setValorPago(e.target.value)}
               disabled={mutation.isPending}
@@ -298,6 +311,49 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
               onChange={(e) => setObservacao(e.target.value)}
               disabled={mutation.isPending}
             />
+          </div>
+
+          {/* Comprovante de pagamento — US-020 (opcional, recomendado) */}
+          <div className="space-y-1.5">
+            <Label>Comprovante de Pagamento</Label>
+            <div
+              className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              style={mutation.isPending ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+              onClick={() => !comprovante && fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className={comprovante ? 'text-foreground flex-1 truncate' : 'text-muted-foreground flex-1'}>
+                {comprovante
+                  ? comprovante.name
+                  : 'Clique para selecionar (PDF, JPEG, PNG — máx 10 MB)'}
+              </span>
+              {comprovante && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setComprovante(null)
+                    if (fileInputRef.current) fileInputRef.current.value = ''
+                  }}
+                  disabled={mutation.isPending}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Remover comprovante"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              className="hidden"
+              onChange={(e) => setComprovante(e.target.files?.[0] ?? null)}
+              disabled={mutation.isPending}
+            />
+            <p className="text-xs text-muted-foreground">
+              Opcional — recomendado para fins de auditoria.
+            </p>
           </div>
         </div>
 

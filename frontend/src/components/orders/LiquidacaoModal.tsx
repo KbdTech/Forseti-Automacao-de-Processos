@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { getOrdem, executeAcao } from '@/services/ordensService'
-import { extractApiError } from '@/utils/formatters'
+import { extractApiError, parseBRL, formatCurrencyInput } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -89,8 +89,10 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
 
   useEffect(() => {
     if (orderId) {
-      // Pré-preenche valor com valor_empenhado
-      setValorLiquidado(ordem?.valor_empenhado ? Number(ordem.valor_empenhado).toFixed(2) : '')
+      // BUG-001: pré-preenche com formatCurrencyInput (ex.: "15.000,00") em vez de .toFixed(2)
+      setValorLiquidado(
+        ordem?.valor_empenhado ? formatCurrencyInput(Number(ordem.valor_empenhado)) : '',
+      )
       setDataLiquidacao(todayISODate())
       setObservacao('')
     }
@@ -103,7 +105,8 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
     onClose()
   }
 
-  const valorNum = parseFloat(valorLiquidado.replace(',', '.')) || 0
+  // BUG-001: parseBRL converte "15.000,00" → 15000
+  const valorNum = parseBRL(valorLiquidado)
   const isValid = valorNum > 0 && dataLiquidacao.length > 0
 
   const mutation = useMutation({
@@ -183,12 +186,12 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
             <Label htmlFor="valor-liquidado">
               Valor Liquidado (R$) <span className="text-destructive">*</span>
             </Label>
+            {/* BUG-001: type="text" evita problema de vírgula como decimal */}
             <Input
               id="valor-liquidado"
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="0.00"
+              type="text"
+              inputMode="decimal"
+              placeholder="0,00"
               value={valorLiquidado}
               onChange={(e) => setValorLiquidado(e.target.value)}
               disabled={mutation.isPending}
