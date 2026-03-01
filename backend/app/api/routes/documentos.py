@@ -36,8 +36,26 @@ router = APIRouter(prefix="/api", tags=["Documentos"])
 # ---------------------------------------------------------------------------
 
 AnyAuthenticated = Annotated[User, Depends(get_current_user)]
-UploaderRole = Annotated[User, Depends(require_role(RoleEnum.secretaria, RoleEnum.admin))]
-UploaderOrAdmin = Annotated[User, Depends(require_role(RoleEnum.secretaria, RoleEnum.admin))]
+# US-017/018/019/020: contabilidade e tesouraria também fazem uploads nos
+# pipelines de empenho, atesto, liquidação e pagamento.
+UploaderRole = Annotated[
+    User,
+    Depends(require_role(
+        RoleEnum.secretaria,
+        RoleEnum.contabilidade,
+        RoleEnum.tesouraria,
+        RoleEnum.admin,
+    )),
+]
+UploaderOrAdmin = Annotated[
+    User,
+    Depends(require_role(
+        RoleEnum.secretaria,
+        RoleEnum.contabilidade,
+        RoleEnum.tesouraria,
+        RoleEnum.admin,
+    )),
+]
 
 
 # ---------------------------------------------------------------------------

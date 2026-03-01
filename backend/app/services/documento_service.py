@@ -45,17 +45,23 @@ _MAGIC_BYTES: dict[str, bytes] = {
 
 _ALLOWED_MIMES = frozenset(_MAGIC_BYTES.keys())
 
-# Status após os quais documentos são somente-leitura (US-015 RN)
-# US-016: statuses que NÃO permitem upload de novos documentos.
-# Permitidos: AGUARDANDO_GABINETE (criação), DEVOLVIDA_PARA_ALTERACAO (edição),
-#             AGUARDANDO_DOCUMENTACAO (Controladoria solicitou documentação).
+# Status que NÃO permitem upload de novos documentos (US-015 RN).
+#
+# Lógica:
+#   - AGUARDANDO_EMPENHO, AGUARDANDO_ATESTO, AGUARDANDO_LIQUIDACAO,
+#     AGUARDANDO_PAGAMENTO são estágios ativos do pipeline financeiro onde
+#     cada perfil operacional DEVE anexar documentos (US-017/018/019/020).
+#     Por isso foram REMOVIDOS desta lista.
+#   - AGUARDANDO_ASSINATURA_SECRETARIA (US-019): secretaria apenas assina,
+#     não faz upload nesta etapa (US-019 Cenário 4).
+#   - Terminais e suspensos: PAGA, CANCELADA, COM_IRREGULARIDADE,
+#     EXECUCAO_COM_PENDENCIA — nenhum upload permitido.
+#   - AGUARDANDO_CONTROLADORIA: secretaria não deve alterar docs em revisão.
+#   - AGUARDANDO_EXECUCAO: status transitório sem upload previsto.
 _STATUSES_IMUTAVEIS: frozenset[StatusOrdemEnum] = frozenset({
     StatusOrdemEnum.AGUARDANDO_CONTROLADORIA,
-    StatusOrdemEnum.AGUARDANDO_EMPENHO,
     StatusOrdemEnum.AGUARDANDO_EXECUCAO,
-    StatusOrdemEnum.AGUARDANDO_ATESTO,
-    StatusOrdemEnum.AGUARDANDO_LIQUIDACAO,
-    StatusOrdemEnum.AGUARDANDO_PAGAMENTO,
+    StatusOrdemEnum.AGUARDANDO_ASSINATURA_SECRETARIA,  # US-019 Cenário 4
     StatusOrdemEnum.PAGA,
     StatusOrdemEnum.CANCELADA,
     StatusOrdemEnum.COM_IRREGULARIDADE,
