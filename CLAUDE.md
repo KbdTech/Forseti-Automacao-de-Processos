@@ -8,9 +8,9 @@
 
 Sistema web de **Ordens de Serviço (OS) e Compras Públicas** para uma Prefeitura Municipal. Substitui processos informais por fluxo digital rastreável com RBAC, auditoria append-only e pipeline financeiro integrado (empenho → atesto → liquidação → pagamento).
 
-**Status:** Projeto base completo — S1→S6 + US-015 (documentos) + US-016 (assinatura GovBR) implementados e testados (91 testes passando).
+**Status:** S1→S6 + US-015 (documentos) + US-016 (assinatura GovBR) implementados e testados (91 testes passando).
 
-**Fase atual:** Recebimento e implementação de novas features.
+**Fase atual:** Sprint 7 em andamento — melhorias de pipeline financeiro, correções de UX e novos uploads obrigatórios. Stories em `docs/stories/S7.*`.
 
 ---
 
@@ -99,6 +99,15 @@ Forseti-Automacoes/
 | US-014 | Notificações por E-mail | Notificações |
 | US-015 | Upload e Gestão de Documentos | Documentos |
 | US-016 | Assinatura Digital GovBR | Assinatura |
+| BUG-001 ⚡ | Formatação de campos de valor monetário | Pipeline Financeiro |
+| UX-001 ⚡ | Fechar modal automaticamente após ação confirmada | Global |
+| US-017 ⚡ | Upload obrigatório de documento de empenho | Pipeline Financeiro |
+| US-018 ⚡ | Melhorias no atesto: NF + docs extras + DLD | Pipeline Financeiro |
+| US-020 ⚡ | Upload opcional de comprovante de pagamento | Pipeline Financeiro |
+| US-021 ⚡ | Minhas Ordens: modo somente leitura | Ordens |
+| US-019 📋 | Assinatura da secretaria na liquidação (S8) | Pipeline Financeiro |
+
+> ⚡ Sprint 7 (em andamento) · 📋 Sprint 8 (planejada)
 
 ---
 

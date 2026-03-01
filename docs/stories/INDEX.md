@@ -2,8 +2,8 @@
 
 > **Projeto:** Forseti Automações
 > **Gerado por:** Pax (PO Agent) — Synkra AIOS
-> **Data:** 2026-02-26
-> **Total:** 14 User Stories | 6 Sprints | ~98 pontos estimados
+> **Atualizado:** 2026-02-28
+> **Total:** 23 itens (16 US + 5 melhorias/bugs + 2 spikes) | 8 Sprints
 
 ---
 
@@ -81,17 +81,41 @@
 
 ---
 
+## Sprint 7 — Melhorias de Pipeline e UX (em andamento)
+**Objetivo:** Correções de formatação, UX de modais, uploads obrigatórios e modo somente leitura.
+
+| ID | Arquivo | Título | Status |
+|----|---------|--------|--------|
+| BUG-001 | [S7.1-BUG001-formatacao-valor.story.md](./S7.1-BUG001-formatacao-valor.story.md) | Formatação de campos de valor monetário | Ready |
+| UX-001 | [S7.2-UX001-fechar-modal-apos-acao.story.md](./S7.2-UX001-fechar-modal-apos-acao.story.md) | Fechar modal após ação confirmada | Ready |
+| US-021 | [S7.3-US021-minhas-ordens-readonly.story.md](./S7.3-US021-minhas-ordens-readonly.story.md) | Minhas Ordens: modo somente leitura | Ready |
+| US-017 | [S7.4-US017-upload-documento-empenho.story.md](./S7.4-US017-upload-documento-empenho.story.md) | Upload obrigatório de documento de empenho | Ready |
+| US-018 | [S7.5-US018-melhorias-atesto-nf.story.md](./S7.5-US018-melhorias-atesto-nf.story.md) | Melhorias no atesto: NF + docs extras + DLD | Ready |
+| US-020 | [S7.6-US020-upload-comprovante-pagamento.story.md](./S7.6-US020-upload-comprovante-pagamento.story.md) | Upload opcional de comprovante de pagamento | Ready |
+
+---
+
+## Sprint 8 — Assinatura da Secretaria na Liquidação (planejada)
+**Objetivo:** Novo status intermediário + pipeline de assinatura + spike de assinatura digital.
+
+| ID | Arquivo | Título | Status |
+|----|---------|--------|--------|
+| US-019 | [S8.1-US019-assinatura-secretaria-liquidacao.story.md](./S8.1-US019-assinatura-secretaria-liquidacao.story.md) | Assinatura da secretaria na liquidação | Draft |
+
+---
+
 ## Resumo Geral
 
-| Sprint | Stories | Pontos | Objetivo |
-|--------|---------|--------|----------|
-| S1 | US-001, US-002 | 16 | Autenticação + RBAC |
-| S2 | US-003, US-004 | 21 | Criação + Acompanhamento |
-| S3 | US-005, US-006, US-007 | 26 | Workflow de Aprovação |
-| S4 | US-008, US-009, US-010 | 24 | Pipeline Financeiro |
-| S5 | US-011, US-012 | 21 | Dashboard + Auditoria |
-| S6 | US-013, US-014 | 13 | Admin + Notificações |
-| **TOTAL** | **14** | **~121** | **Sistema completo** |
+| Sprint | Items | Objetivo | Status |
+|--------|-------|----------|--------|
+| S1 | US-001, US-002 | Autenticação + RBAC | ✅ Done |
+| S2 | US-003, US-004 | Criação + Acompanhamento | ✅ Done |
+| S3 | US-005, US-006, US-007 | Workflow de Aprovação | ✅ Done |
+| S4 | US-008, US-009, US-010 | Pipeline Financeiro | ✅ Done |
+| S5 | US-011, US-012 | Dashboard + Auditoria | ✅ Done |
+| S6 | US-013, US-014 | Admin + Notificações | ✅ Done |
+| S7 | BUG-001, UX-001, US-017, US-018, US-020, US-021 | Melhorias Pipeline + UX | 🔄 Em andamento |
+| S8 | US-019 | Assinatura Liquidação | 📋 Planejada |
 
 ---
 
