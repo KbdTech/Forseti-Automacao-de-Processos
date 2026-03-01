@@ -300,7 +300,7 @@ function DocumentosTabContent({ orderId, ordemStatus, assinaturaGovbr, readOnly 
 // ---------------------------------------------------------------------------
 
 export function OrderDetailModal({ orderId, onClose, renderActions, readOnly }: OrderDetailModalProps) {
-  const { data: ordem, isLoading, isError, refetch } = useQuery({
+  const { data: ordem, isLoading, isError } = useQuery({
     queryKey: ['ordem', orderId],
     queryFn: () => getOrdem(orderId!),
     enabled: orderId !== null,
@@ -503,7 +503,7 @@ export function OrderDetailModal({ orderId, onClose, renderActions, readOnly }: 
             <Separator className="mt-2" />
             <div className="pt-3">
               {renderActions(ordem.id, ordem.status, () => {
-                refetch()
+                onClose()
               })}
             </div>
           </>

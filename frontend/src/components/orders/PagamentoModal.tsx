@@ -175,6 +175,12 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
   return (
     <Dialog open={orderId !== null} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-lg">
+        {mutation.isPending && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium text-muted-foreground">Processando...</p>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle>Registrar Pagamento</DialogTitle>
           <DialogDescription>
@@ -183,7 +189,7 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
           {/* Card resumo completo */}
           {ordem && (
             <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
@@ -241,7 +247,6 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
               value={valorPago}
               onChange={(e) => setValorPago(e.target.value)}
               disabled={mutation.isPending}
-              autoFocus
             />
           </div>
 

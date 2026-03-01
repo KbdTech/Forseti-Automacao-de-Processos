@@ -142,6 +142,12 @@ export function EmpenhoModal({ orderId, onClose, onSuccess }: EmpenhoModalProps)
   return (
     <Dialog open={orderId !== null} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent>
+        {mutation.isPending && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium text-muted-foreground">Processando...</p>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle>Registrar Empenho</DialogTitle>
           <DialogDescription>
@@ -150,7 +156,7 @@ export function EmpenhoModal({ orderId, onClose, onSuccess }: EmpenhoModalProps)
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
           {/* Número do empenho — US-008 RN-42 */}
           <div className="space-y-1.5">
             <Label htmlFor="numero-empenho">
@@ -162,7 +168,6 @@ export function EmpenhoModal({ orderId, onClose, onSuccess }: EmpenhoModalProps)
               value={numeroEmpenho}
               onChange={(e) => setNumeroEmpenho(e.target.value)}
               disabled={mutation.isPending}
-              autoFocus
             />
           </div>
 

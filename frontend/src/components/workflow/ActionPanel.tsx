@@ -295,75 +295,83 @@ export function ActionPanel({
       {activeAction && (
         <Dialog open={true} onOpenChange={(open) => !open && handleClose()}>
           <DialogContent>
+            {mutation.isPending && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-sm">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm font-medium text-muted-foreground">Processando...</p>
+              </div>
+            )}
             <DialogHeader>
               <DialogTitle>{activeAction.dialogTitle}</DialogTitle>
               <DialogDescription>{activeAction.dialogDescription}</DialogDescription>
             </DialogHeader>
 
-            {/* Alerta customizado (ex.: "ordem ficará suspensa") — US-007 */}
-            {activeAction.customAlertMessage && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{activeAction.customAlertMessage}</AlertDescription>
-              </Alert>
-            )}
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+              {/* Alerta customizado (ex.: "ordem ficará suspensa") — US-007 */}
+              {activeAction.customAlertMessage && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{activeAction.customAlertMessage}</AlertDescription>
+                </Alert>
+              )}
 
-            {/* Alerta de ação irreversível — US-005 RN-29 */}
-            {activeAction.irreversivel && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  Esta ação é irreversível. Somente o Administrador poderá reverter.
-                </AlertDescription>
-              </Alert>
-            )}
+              {/* Alerta de ação irreversível — US-005 RN-29 */}
+              {activeAction.irreversivel && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    Esta ação é irreversível. Somente o Administrador poderá reverter.
+                  </AlertDescription>
+                </Alert>
+              )}
 
-            {/* Campo de observação */}
-            {activeAction.observacaoLabel && (
-              <div className="space-y-1.5">
-                <Label htmlFor="observacao-action">
-                  {activeAction.observacaoLabel}
+              {/* Campo de observação */}
+              {activeAction.observacaoLabel && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="observacao-action">
+                    {activeAction.observacaoLabel}
+                    {activeAction.observacaoMinChars > 0 && (
+                      <span className="text-destructive"> *</span>
+                    )}
+                  </Label>
+                  <Textarea
+                    id="observacao-action"
+                    placeholder={
+                      activeAction.observacaoMinChars > 0
+                        ? `Mínimo de ${activeAction.observacaoMinChars} caracteres.`
+                        : 'Observação opcional.'
+                    }
+                    rows={4}
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    aria-invalid={
+                      activeAction.observacaoMinChars > 0 &&
+                      observacao.length > 0 &&
+                      observacao.length < activeAction.observacaoMinChars
+                    }
+                    className={
+                      activeAction.observacaoMinChars > 0 &&
+                      observacao.length > 0 &&
+                      observacao.length < activeAction.observacaoMinChars
+                        ? 'border-destructive'
+                        : ''
+                    }
+                  />
                   {activeAction.observacaoMinChars > 0 && (
-                    <span className="text-destructive"> *</span>
+                    <p
+                      className={[
+                        'text-xs',
+                        observacao.length >= activeAction.observacaoMinChars
+                          ? 'text-muted-foreground'
+                          : 'text-destructive',
+                      ].join(' ')}
+                    >
+                      {observacao.length}/{activeAction.observacaoMinChars} caracteres mínimos
+                    </p>
                   )}
-                </Label>
-                <Textarea
-                  id="observacao-action"
-                  placeholder={
-                    activeAction.observacaoMinChars > 0
-                      ? `Mínimo de ${activeAction.observacaoMinChars} caracteres.`
-                      : 'Observação opcional.'
-                  }
-                  rows={4}
-                  value={observacao}
-                  onChange={(e) => setObservacao(e.target.value)}
-                  aria-invalid={
-                    activeAction.observacaoMinChars > 0 &&
-                    observacao.length > 0 &&
-                    observacao.length < activeAction.observacaoMinChars
-                  }
-                  className={
-                    activeAction.observacaoMinChars > 0 &&
-                    observacao.length > 0 &&
-                    observacao.length < activeAction.observacaoMinChars
-                      ? 'border-destructive'
-                      : ''
-                  }
-                />
-                {activeAction.observacaoMinChars > 0 && (
-                  <p
-                    className={[
-                      'text-xs',
-                      observacao.length >= activeAction.observacaoMinChars
-                        ? 'text-muted-foreground'
-                        : 'text-destructive',
-                    ].join(' ')}
-                  >
-                    {observacao.length}/{activeAction.observacaoMinChars} caracteres mínimos
-                  </p>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
 
             <DialogFooter className="gap-2 sm:gap-0">
               <Button

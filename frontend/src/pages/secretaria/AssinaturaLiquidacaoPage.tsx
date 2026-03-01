@@ -132,6 +132,12 @@ function AssinaturaConfirmModal({ ordem, onClose, onConfirm, isPending }: Assina
   return (
     <Dialog open={ordem !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-md">
+        {isPending && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium text-muted-foreground">Processando...</p>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle>Assinar e Aprovar Liquidação</DialogTitle>
           <DialogDescription>
@@ -140,30 +146,32 @@ function AssinaturaConfirmModal({ ordem, onClose, onConfirm, isPending }: Assina
           </DialogDescription>
         </DialogHeader>
 
-        {ordem && (
-          <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Protocolo</span>
-              <span className="font-mono font-medium">{ordem.protocolo}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Secretaria</span>
-              <span>{ordem.secretaria_nome}</span>
-            </div>
-            {ordem.valor_liquidado != null && (
+        <div className="max-h-[60vh] overflow-y-auto">
+          {ordem && (
+            <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Valor Liquidado</span>
-                <span className="font-medium">{formatBRL(ordem.valor_liquidado)}</span>
+                <span className="text-muted-foreground">Protocolo</span>
+                <span className="font-mono font-medium">{ordem.protocolo}</span>
               </div>
-            )}
-            {ordem.data_liquidacao && (
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Data da Liquidação</span>
-                <span>{formatDate(ordem.data_liquidacao)}</span>
+                <span className="text-muted-foreground">Secretaria</span>
+                <span>{ordem.secretaria_nome}</span>
               </div>
-            )}
-          </div>
-        )}
+              {ordem.valor_liquidado != null && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Valor Liquidado</span>
+                  <span className="font-medium">{formatBRL(ordem.valor_liquidado)}</span>
+                </div>
+              )}
+              {ordem.data_liquidacao && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Data da Liquidação</span>
+                  <span>{formatDate(ordem.data_liquidacao)}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={onClose} disabled={isPending}>

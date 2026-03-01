@@ -100,6 +100,12 @@ export function RecusaModal({ orderId, onClose, onSuccess }: RecusaModalProps) {
   return (
     <Dialog open={orderId !== null} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent>
+        {mutation.isPending && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium text-muted-foreground">Processando...</p>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle>Recusar Atesto</DialogTitle>
           <DialogDescription>
@@ -108,7 +114,7 @@ export function RecusaModal({ orderId, onClose, onSuccess }: RecusaModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
           {/* Alerta destrutivo */}
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -132,7 +138,6 @@ export function RecusaModal({ orderId, onClose, onSuccess }: RecusaModalProps) {
               value={observacao}
               onChange={(e) => setObservacao(e.target.value)}
               disabled={mutation.isPending}
-              autoFocus
             />
             <p
               className={`text-xs text-right ${

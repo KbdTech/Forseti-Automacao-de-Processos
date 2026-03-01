@@ -148,6 +148,12 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
   return (
     <Dialog open={orderId !== null} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent>
+        {mutation.isPending && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm font-medium text-muted-foreground">Processando...</p>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle>Registrar Liquidação</DialogTitle>
           <DialogDescription>
@@ -155,7 +161,7 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto">
           {/* Card resumo */}
           {ordem && (
             <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
@@ -208,7 +214,6 @@ export function LiquidacaoModal({ orderId, onClose, onSuccess }: LiquidacaoModal
               value={valorLiquidado}
               onChange={(e) => setValorLiquidado(e.target.value)}
               disabled={mutation.isPending}
-              autoFocus
             />
           </div>
 
