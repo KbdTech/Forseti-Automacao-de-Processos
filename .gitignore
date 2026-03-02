@@ -51,3 +51,4 @@ logs/
 .aios-core/node_modules/
 .claude/settings.local.json
 .aios/install-log.txt
+deploy/railway-env-vars.txt
