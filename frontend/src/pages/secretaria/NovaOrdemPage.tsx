@@ -619,7 +619,17 @@ export default function NovaOrdemPage() {
         : (['descricao', 'valor_estimado', 'justificativa'] as const)
 
     const valid = await trigger(fields)
-    if (valid) setStep((s) => s + 1)
+    if (!valid) return
+
+    // UX-003: etapa 2 exige ao menos 1 documento antes de avançar
+    if (step === 2 && pendingFiles.length === 0) {
+      toast.error('Documento obrigatório', {
+        description: 'Anexe ao menos 1 documento de suporte para continuar.',
+      })
+      return
+    }
+
+    setStep((s) => s + 1)
   }
 
   function handleVoltar() {
