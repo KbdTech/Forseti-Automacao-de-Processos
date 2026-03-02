@@ -52,8 +52,8 @@ _ALLOWED_MIMES = frozenset(_MAGIC_BYTES.keys())
 #     AGUARDANDO_PAGAMENTO são estágios ativos do pipeline financeiro onde
 #     cada perfil operacional DEVE anexar documentos (US-017/018/019/020).
 #     Por isso foram REMOVIDOS desta lista.
-#   - AGUARDANDO_ASSINATURA_SECRETARIA (US-019): secretaria apenas assina,
-#     não faz upload nesta etapa (US-019 Cenário 4).
+#   - AGUARDANDO_ASSINATURA_SECRETARIA (US-019): a secretaria faz upload do
+#     documento assinado ANTES de confirmar a ação — portanto upload é necessário.
 #   - Terminais e suspensos: PAGA, CANCELADA, COM_IRREGULARIDADE,
 #     EXECUCAO_COM_PENDENCIA — nenhum upload permitido.
 #   - AGUARDANDO_CONTROLADORIA: secretaria não deve alterar docs em revisão.
@@ -61,7 +61,7 @@ _ALLOWED_MIMES = frozenset(_MAGIC_BYTES.keys())
 _STATUSES_IMUTAVEIS: frozenset[StatusOrdemEnum] = frozenset({
     StatusOrdemEnum.AGUARDANDO_CONTROLADORIA,
     StatusOrdemEnum.AGUARDANDO_EXECUCAO,
-    StatusOrdemEnum.AGUARDANDO_ASSINATURA_SECRETARIA,  # US-019 Cenário 4
+    # AGUARDANDO_ASSINATURA_SECRETARIA removido: upload do doc assinado é parte do fluxo
     StatusOrdemEnum.PAGA,
     StatusOrdemEnum.CANCELADA,
     StatusOrdemEnum.COM_IRREGULARIDADE,
