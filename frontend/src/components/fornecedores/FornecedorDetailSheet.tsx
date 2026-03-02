@@ -2,14 +2,16 @@
  * FornecedorDetailSheet — painel lateral com detalhe completo de um fornecedor.
  *
  * Tabs:
- *   - Resumo: KPIs financeiros (total pago, saldo, %) + gráfico de barras mensais
- *   - Ordens:  tabela das últimas ordens pagas vinculadas
- *   - Contrato: dados do contrato + informações bancárias
+ *   - Resumo:    KPIs financeiros + gráfico de barras mensais
+ *   - Ordens:    tabela das últimas ordens pagas vinculadas
+ *   - Contrato:  dados do contrato + informações bancárias
+ *   - Documentos: upload e listagem de PDFs/imagens do fornecedor (S12.2)
  *
- * Carrega GET /api/fornecedores/{id}/resumo apenas quando o sheet está aberto.
+ * Carrega GET /api/fornecedores/{id}/resumo e GET /api/fornecedores/{id}/documentos.
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   BarChart,
   Bar,
@@ -27,6 +29,11 @@ import {
   CheckCircle2,
   Loader2,
   AlertCircle,
+  Paperclip,
+  Upload,
+  Trash2,
+  Download,
+  File as FileIcon,
 } from 'lucide-react'
 
 import {
@@ -40,9 +47,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
 
-import { getFornecedorResumo } from '@/services/fornecedoresService'
+import {
+  getFornecedorResumo,
+  listFornecedorDocumentos,
+  uploadFornecedorDocumento,
+  getFornecedorDocumentoDownloadUrl,
+  deleteFornecedorDocumento,
+} from '@/services/fornecedoresService'
 import { formatBRL, formatCNPJ } from '@/utils/formatters'
+import { useAuthStore } from '@/stores/authStore'
 import type { GastoMes } from '@/types/fornecedor'
 
 // ---------------------------------------------------------------------------
@@ -381,6 +396,195 @@ function TabContrato({ data }: { data: ReturnType<typeof getFornecedorResumo> ex
 }
 
 // ---------------------------------------------------------------------------
+// Sub: Tab Documentos (S12.2)
+// ---------------------------------------------------------------------------
+
+function TabDocumentos({ fornecedorId }: { fornecedorId: string }) {
+  const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [descricao, setDescricao] = useState('')
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
+  const user = useAuthStore((s) => s.user)
+  const canUpload = user?.role === 'admin' || user?.role === 'compras'
+
+  const { data: docs, isLoading } = useQuery({
+    queryKey: ['fornecedor-docs', fornecedorId],
+    queryFn: () => listFornecedorDocumentos(fornecedorId),
+    staleTime: 30_000,
+  })
+
+  const uploadMutation = useMutation({
+    mutationFn: ({ file, desc }: { file: File; desc: string }) =>
+      uploadFornecedorDocumento(fornecedorId, file, desc || undefined),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['fornecedor-docs', fornecedorId] })
+      setDescricao('')
+      setUploadError(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      setUploadError(err?.response?.data?.detail ?? 'Erro ao enviar o arquivo.')
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (docId: string) => deleteFornecedorDocumento(docId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['fornecedor-docs', fornecedorId] })
+    },
+  })
+
+  async function handleDownload(docId: string, nome: string) {
+    const { download_url } = await getFornecedorDocumentoDownloadUrl(docId)
+    const a = document.createElement('a')
+    a.href = download_url
+    a.download = nome
+    a.target = '_blank'
+    a.click()
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError(null)
+    uploadMutation.mutate({ file, desc: descricao })
+  }
+
+  function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Upload */}
+      {canUpload && (
+        <div className="rounded-lg border border-dashed bg-muted/20 p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+            <Upload className="h-3.5 w-3.5" /> Adicionar documento
+          </p>
+          <input
+            type="text"
+            placeholder="Descrição (ex.: Contrato, Certidão…)"
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            className="w-full text-sm rounded-md border bg-background px-3 py-2 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,image/jpeg,image/png"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploadMutation.isPending}
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-1.5"
+            >
+              {uploadMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              {uploadMutation.isPending ? 'Enviando…' : 'Selecionar arquivo'}
+            </Button>
+            <span className="text-xs text-muted-foreground">PDF, JPEG ou PNG · máx. 20 MB</span>
+          </div>
+          {uploadError && (
+            <p className="text-xs text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {uploadError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Lista */}
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3 rounded-lg border p-3">
+              <Skeleton className="h-8 w-8 rounded-md shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-3.5 w-3/4" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : !docs || docs.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-10 text-center">
+          <Paperclip className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {canUpload
+              ? 'Nenhum documento cadastrado. Adicione acima.'
+              : 'Nenhum documento cadastrado.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {docs.length} documento(s) cadastrado(s)
+          </p>
+          {docs.map((doc) => (
+            <div
+              key={doc.id}
+              className="flex items-start gap-3 rounded-lg border bg-muted/20 px-3 py-2.5"
+            >
+              <div className="rounded-md border bg-background p-1.5 shrink-0 mt-0.5">
+                <FileIcon className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate" title={doc.nome_arquivo}>
+                  {doc.nome_arquivo}
+                </p>
+                {doc.descricao && (
+                  <p className="text-xs text-muted-foreground truncate">{doc.descricao}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {formatBytes(doc.tamanho_bytes)} · {doc.created_at.slice(0, 10).split('-').reverse().join('/')}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  title="Baixar"
+                  onClick={() => void handleDownload(doc.id, doc.nome_arquivo)}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+                {canUpload && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    title="Remover"
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate(doc.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------------------
 
@@ -458,20 +662,24 @@ export function FornecedorDetailSheet({ fornecedorId, onClose }: FornecedorDetai
             </div>
           )}
 
-          {data && (
+          {data && fornecedorId && (
             <Tabs defaultValue="resumo">
-              <TabsList className="w-full mb-5">
-                <TabsTrigger value="resumo" className="flex-1 gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5" />
+              <TabsList className="w-full mb-5 grid grid-cols-4">
+                <TabsTrigger value="resumo" className="gap-1 text-xs">
+                  <TrendingUp className="h-3 w-3" />
                   Resumo
                 </TabsTrigger>
-                <TabsTrigger value="ordens" className="flex-1 gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                <TabsTrigger value="ordens" className="gap-1 text-xs">
+                  <CheckCircle2 className="h-3 w-3" />
                   Ordens
                 </TabsTrigger>
-                <TabsTrigger value="contrato" className="flex-1 gap-1.5">
-                  <FileText className="h-3.5 w-3.5" />
+                <TabsTrigger value="contrato" className="gap-1 text-xs">
+                  <FileText className="h-3 w-3" />
                   Contrato
+                </TabsTrigger>
+                <TabsTrigger value="documentos" className="gap-1 text-xs">
+                  <Paperclip className="h-3 w-3" />
+                  Docs
                 </TabsTrigger>
               </TabsList>
 
@@ -485,6 +693,10 @@ export function FornecedorDetailSheet({ fornecedorId, onClose }: FornecedorDetai
 
               <TabsContent value="contrato">
                 <TabContrato data={data} />
+              </TabsContent>
+
+              <TabsContent value="documentos">
+                <TabDocumentos fornecedorId={fornecedorId} />
               </TabsContent>
             </Tabs>
           )}

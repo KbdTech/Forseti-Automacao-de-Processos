@@ -188,6 +188,11 @@ class FornecedorResponse(BaseModel):
     is_active: Annotated[bool, Field(description="Status ativo/inativo.")]
     created_at: Annotated[datetime, Field(description="Timestamp de criação.")]
     updated_at: Annotated[datetime, Field(description="Timestamp da última atualização.")]
+    # Calculado no service — soma das ordens PAGA vinculadas (S12.2)
+    total_pago: Annotated[
+        Decimal,
+        Field(default=Decimal(0), description="Total já pago em ordens PAGA vinculadas."),
+    ] = Decimal(0)
 
     @classmethod
     def from_orm_with_secretaria(cls, obj: object) -> "FornecedorResponse":
@@ -276,3 +281,30 @@ class FornecedorResumoResponse(BaseModel):
 
     # Últimas ordens pagas (até 10)
     ultimas_ordens: Annotated[list[OrdemResumoItem], Field(default_factory=list)]
+
+
+# ---------------------------------------------------------------------------
+# Documentos de fornecedor — GET/POST /api/fornecedores/{id}/documentos
+# ---------------------------------------------------------------------------
+
+
+class FornecedorDocumentoResponse(BaseModel):
+    """Metadados de um documento de fornecedor — nunca expõe storage_path."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: Annotated[uuid.UUID, Field(description="UUID do documento.")]
+    fornecedor_id: Annotated[uuid.UUID, Field(description="UUID do fornecedor.")]
+    nome_arquivo: Annotated[str, Field(description="Nome original do arquivo.")]
+    tipo_mime: Annotated[str, Field(description="MIME type.")]
+    tamanho_bytes: Annotated[int, Field(description="Tamanho em bytes.")]
+    descricao: Annotated[str | None, Field(default=None, description="Descrição do documento.")]
+    uploaded_by: Annotated[uuid.UUID, Field(description="UUID do usuário que fez o upload.")]
+    created_at: Annotated[datetime, Field(description="Timestamp do upload.")]
+
+
+class FornecedorDocumentoDownloadUrl(BaseModel):
+    """URL assinada para download de documento do fornecedor."""
+
+    download_url: Annotated[str, Field(description="URL assinada com TTL de 900 segundos.")]
+    expires_in: Annotated[int, Field(description="TTL em segundos.")] = 900

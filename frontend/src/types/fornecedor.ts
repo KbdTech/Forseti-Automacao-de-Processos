@@ -20,6 +20,28 @@ export interface FornecedorResponse {
   is_active: boolean
   created_at: string
   updated_at: string
+  /** Total já pago em ordens PAGA vinculadas (calculado pelo service). */
+  total_pago: number
+}
+
+// ---------------------------------------------------------------------------
+// Documentos de fornecedor — S12.2
+// ---------------------------------------------------------------------------
+
+export interface FornecedorDocumento {
+  id: string
+  fornecedor_id: string
+  nome_arquivo: string
+  tipo_mime: string
+  tamanho_bytes: number
+  descricao: string | null
+  uploaded_by: string
+  created_at: string
+}
+
+export interface FornecedorDocumentoDownloadUrl {
+  download_url: string
+  expires_in: number
 }
 
 export interface FornecedorListResponse {

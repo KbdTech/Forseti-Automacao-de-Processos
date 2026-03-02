@@ -10,7 +10,14 @@
  */
 
 import apiClient from '@/services/apiClient'
-import type { FornecedorResponse, FornecedorListResponse, FornecedoresFilters, FornecedorResumo } from '@/types/fornecedor'
+import type {
+  FornecedorResponse,
+  FornecedorListResponse,
+  FornecedoresFilters,
+  FornecedorResumo,
+  FornecedorDocumento,
+  FornecedorDocumentoDownloadUrl,
+} from '@/types/fornecedor'
 
 export interface FornecedorCreate {
   razao_social: string
@@ -88,4 +95,50 @@ export async function toggleFornecedorStatus(
 export async function getFornecedorResumo(id: string): Promise<FornecedorResumo> {
   const { data } = await apiClient.get<FornecedorResumo>(`/api/fornecedores/${id}/resumo`)
   return data
+}
+
+// ---------------------------------------------------------------------------
+// Documentos de fornecedor — S12.2
+// ---------------------------------------------------------------------------
+
+/** GET /api/fornecedores/{id}/documentos — lista documentos do fornecedor. */
+export async function listFornecedorDocumentos(
+  fornecedorId: string,
+): Promise<FornecedorDocumento[]> {
+  const { data } = await apiClient.get<FornecedorDocumento[]>(
+    `/api/fornecedores/${fornecedorId}/documentos`,
+  )
+  return data
+}
+
+/** POST /api/fornecedores/{id}/documentos — upload de documento (admin/compras). */
+export async function uploadFornecedorDocumento(
+  fornecedorId: string,
+  file: File,
+  descricao?: string,
+): Promise<FornecedorDocumento> {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (descricao) formData.append('descricao', descricao)
+  const { data } = await apiClient.post<FornecedorDocumento>(
+    `/api/fornecedores/${fornecedorId}/documentos`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return data
+}
+
+/** GET /api/fornecedores/documentos/{doc_id}/download-url — URL assinada. */
+export async function getFornecedorDocumentoDownloadUrl(
+  docId: string,
+): Promise<FornecedorDocumentoDownloadUrl> {
+  const { data } = await apiClient.get<FornecedorDocumentoDownloadUrl>(
+    `/api/fornecedores/documentos/${docId}/download-url`,
+  )
+  return data
+}
+
+/** DELETE /api/fornecedores/documentos/{doc_id} — remove documento. */
+export async function deleteFornecedorDocumento(docId: string): Promise<void> {
+  await apiClient.delete(`/api/fornecedores/documentos/${docId}`)
 }

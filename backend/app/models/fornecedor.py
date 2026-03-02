@@ -35,6 +35,7 @@ from app.core.database import Base
 if TYPE_CHECKING:
     from app.models.secretaria import Secretaria
     from app.models.ordem import Ordem
+    from app.models.fornecedor_documento import FornecedorDocumento
 
 
 class Fornecedor(Base):
@@ -184,6 +185,12 @@ class Fornecedor(Base):
         "Ordem",
         back_populates="fornecedor",
         lazy="noload",
+    )
+    documentos: Mapped[list["FornecedorDocumento"]] = relationship(
+        "FornecedorDocumento",
+        back_populates="fornecedor",
+        lazy="noload",
+        order_by="FornecedorDocumento.created_at.desc()",
     )
 
     # ------------------------------------------------------------------

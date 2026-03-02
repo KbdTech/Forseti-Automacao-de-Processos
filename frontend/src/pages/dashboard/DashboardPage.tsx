@@ -30,6 +30,8 @@ import {
   AlertTriangle,
   Timer,
   RefreshCw,
+  Building2,
+  TrendingUp,
 } from 'lucide-react'
 import {
   BarChart,
@@ -42,15 +44,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -59,11 +52,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { KPICard, KPICardSkeleton } from '@/components/dashboard/KPICard'
+import { FornecedorDetailSheet } from '@/components/fornecedores/FornecedorDetailSheet'
 import { getSummary, getAlertas, getGastosFornecedor } from '@/services/dashboardService'
-import { formatCNPJ } from '@/utils/formatters'
+import { getFornecedorResumo } from '@/services/fornecedoresService'
+import { formatBRL as formatBRLUtil, formatCNPJ, formatNomeSecretaria } from '@/utils/formatters'
 import { useAuth } from '@/hooks/useAuth'
 import { STATUS_CONFIG } from '@/utils/constants'
 import type { StatusOrdem } from '@/types/ordem'
+import type { GastoMes } from '@/types/fornecedor'
 
 // ---------------------------------------------------------------------------
 // Constantes
@@ -72,10 +68,8 @@ import type { StatusOrdem } from '@/types/ordem'
 /** US-011 RN-59: auto-refresh a cada 5 minutos. */
 const REFETCH_INTERVAL_MS = 5 * 60 * 1000
 
-/** Formata valor monetário em BRL. */
-function formatBRL(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
+/** Alias local — usa formatters.ts para consistência. */
+const formatBRL = formatBRLUtil
 
 /** Formata date para YYYY-MM-DD (parâmetro da API). */
 function toISO(d: Date): string {
@@ -123,6 +117,111 @@ function BRLTooltip({ active, payload, label }: {
 }
 
 // ---------------------------------------------------------------------------
+// Sub-componente: card de fornecedor com barra de uso do contrato
+// (reutiliza o resumo endpoint para mostrar saldo em tempo real)
+// ---------------------------------------------------------------------------
+
+function FornecedorGastoCard({
+  fornecedor_id,
+  razao_social,
+  cnpj,
+  total_pago,
+  count_ordens,
+  secretaria_nome,
+  onClick,
+}: {
+  fornecedor_id: string
+  razao_social: string
+  cnpj: string
+  total_pago: number
+  count_ordens: number
+  secretaria_nome: string | null
+  onClick: () => void
+}) {
+  const { data: resumo, isLoading } = useQuery({
+    queryKey: ['fornecedor-resumo', fornecedor_id],
+    queryFn: () => getFornecedorResumo(fornecedor_id),
+    staleTime: 60_000,
+  })
+
+  const pct = resumo?.percentual_utilizado ?? 0
+  const clampedPct = Math.min(pct, 100)
+  const barColor =
+    pct > 100 ? 'bg-red-500' : pct >= 80 ? 'bg-yellow-500' : 'bg-emerald-500'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left w-full rounded-lg border bg-card p-4 space-y-3 hover:bg-muted/40 hover:border-primary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="flex items-start gap-3">
+        <div className="rounded-md border bg-muted p-1.5 shrink-0 mt-0.5">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-sm leading-tight truncate" title={razao_social}>
+            {razao_social}
+          </p>
+          <p className="text-xs text-muted-foreground font-mono">{formatCNPJ(cnpj)}</p>
+          {secretaria_nome && (
+            <p className="text-xs text-muted-foreground truncate">
+              {formatNomeSecretaria(secretaria_nome)}
+            </p>
+          )}
+        </div>
+        <Badge variant="secondary" className="shrink-0 text-xs">
+          {count_ordens} ordem{count_ordens !== 1 ? 'ns' : ''}
+        </Badge>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-1.5">
+          <Skeleton className="h-2.5 w-full rounded-full" />
+          <div className="flex justify-between">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+      ) : resumo && resumo.valor_contratado != null ? (
+        <div className="space-y-1.5">
+          <div className="relative h-2.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className={`absolute left-0 top-0 h-full rounded-full ${barColor}`}
+              style={{ width: `${clampedPct}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              Pago: <span className="font-medium text-foreground ml-0.5">
+                {formatBRL(total_pago)}
+              </span>
+            </span>
+            <span className={pct > 100 ? 'text-red-600 font-semibold' : 'text-muted-foreground'}>
+              {pct.toFixed(0)}% utilizado
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Saldo:{' '}
+            <span className="font-medium text-foreground">
+              {formatBRL(Number(resumo.saldo_disponivel))}
+            </span>
+            {' '}de{' '}
+            <span className="font-medium">{formatBRL(Number(resumo.valor_contratado))}</span>
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
+          <TrendingUp className="h-3 w-3" />
+          Pago no período: <span className="font-medium text-foreground ml-0.5">{formatBRL(total_pago)}</span>
+        </p>
+      )}
+    </button>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Página principal
 // ---------------------------------------------------------------------------
 
@@ -131,6 +230,8 @@ export default function DashboardPage() {
 
   const isGabineteOrAdmin = isRole('gabinete', 'admin')
   const isSecretaria = isRole('secretaria')
+
+  const [selectedFornecedorId, setSelectedFornecedorId] = useState<string | null>(null)
 
   // --- Período --- default: mês atual
   const today = new Date()
@@ -519,7 +620,7 @@ export default function DashboardPage() {
                               {g.protocolo}
                             </span>
                             <span className="text-sm text-muted-foreground">
-                              {g.secretaria_nome}
+                              {formatNomeSecretaria(g.secretaria_nome)}
                             </span>
                             <span className="text-xs text-muted-foreground">
                               {STATUS_CONFIG[g.status as StatusOrdem]?.label ?? g.status}
@@ -551,7 +652,7 @@ export default function DashboardPage() {
                           key={s.secretaria_nome}
                           className="py-3 flex items-center justify-between gap-4"
                         >
-                          <span className="text-sm font-medium">{s.secretaria_nome}</span>
+                          <span className="text-sm font-medium">{formatNomeSecretaria(s.secretaria_nome)}</span>
                           <div className="flex items-center gap-3 text-sm text-muted-foreground">
                             <span>
                               {s.com_problema}/{s.total_ordens} ordens c/ problema
@@ -579,57 +680,59 @@ export default function DashboardPage() {
       {/* ------------------------------------------------------------------ */}
 
       {isGabineteOrAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Gastos por Fornecedor</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {gastosLoading ? (
-              <Skeleton className="h-40 w-full" />
-            ) : !gastosData?.length ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Gastos por Fornecedor
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Pagamentos do período selecionado — clique para ver detalhes, contrato e documentos.
+            </p>
+          </div>
+
+          {gastosLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-8 w-8 rounded-md" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-2.5 w-full rounded-full" />
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !gastosData?.length ? (
+            <div className="rounded-lg border border-dashed p-10 text-center">
+              <Building2 className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+              <p className="text-sm text-muted-foreground">
                 Nenhum pagamento registrado no período.
               </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fornecedor</TableHead>
-                      <TableHead>CNPJ</TableHead>
-                      <TableHead className="text-right">Total Pago</TableHead>
-                      <TableHead className="text-right">Ordens</TableHead>
-                      <TableHead>Secretaria</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {gastosData.map((item) => (
-                      <TableRow key={item.fornecedor_id}>
-                        <TableCell className="font-medium max-w-[200px]">
-                          <span className="block truncate" title={item.razao_social}>
-                            {item.razao_social}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm whitespace-nowrap">
-                          {formatCNPJ(item.cnpj)}
-                        </TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
-                          {formatBRL(item.total_pago)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.count_ordens}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {item.secretaria_nome ?? '—'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {gastosData.map((item) => (
+                <FornecedorGastoCard
+                  key={item.fornecedor_id}
+                  fornecedor_id={item.fornecedor_id}
+                  razao_social={item.razao_social}
+                  cnpj={item.cnpj}
+                  total_pago={item.total_pago}
+                  count_ordens={item.count_ordens}
+                  secretaria_nome={item.secretaria_nome}
+                  onClick={() => setSelectedFornecedorId(item.fornecedor_id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Nota de período */}
@@ -640,5 +743,11 @@ export default function DashboardPage() {
         automaticamente a cada 5 minutos.
       </p>
     </div>
+
+    {/* Sheet de detalhe do fornecedor */}
+    <FornecedorDetailSheet
+      fornecedorId={selectedFornecedorId}
+      onClose={() => setSelectedFornecedorId(null)}
+    />
   )
 }

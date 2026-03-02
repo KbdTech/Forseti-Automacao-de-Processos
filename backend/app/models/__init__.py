@@ -4,15 +4,16 @@ Importar este módulo garante que todos os models sejam registrados
 no Base.metadata antes de execução de migrations Alembic.
 
 Ordem de importação respeita dependências de FK:
-  1. enums        (sem dependências — apenas tipos Python/SQLAlchemy)
-  2. secretaria   (sem FKs externas)
-  3. user         (FK → secretaria)
-  4. audit        (FK → user)
-  5. fornecedor   (FK → secretaria) — S11.1
-  6. ordem        (FK → secretaria, user, fornecedor)
-  7. ordem_historico (FK → ordem, user)
-  8. notification (FK → ordem, user) — US-014
-  9. documento    (FK → ordem, user) — US-015
+  1. enums               (sem dependências — apenas tipos Python/SQLAlchemy)
+  2. secretaria          (sem FKs externas)
+  3. user                (FK → secretaria)
+  4. audit               (FK → user)
+  5. fornecedor          (FK → secretaria) — S11.1
+  6. fornecedor_documento (FK → fornecedor, user) — S12.2
+  7. ordem               (FK → secretaria, user, fornecedor)
+  8. ordem_historico     (FK → ordem, user)
+  9. notification        (FK → ordem, user) — US-014
+  10. documento           (FK → ordem, user) — US-015
 """
 
 from app.models.enums import (  # noqa: F401
@@ -25,6 +26,7 @@ from app.models.secretaria import Secretaria  # noqa: F401
 from app.models.user import RoleChangeLog, RoleEnum, User  # noqa: F401
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.fornecedor import Fornecedor  # noqa: F401  — S11.1
+from app.models.fornecedor_documento import FornecedorDocumento  # noqa: F401  — S12.2
 from app.models.ordem import Ordem  # noqa: F401
 from app.models.ordem_historico import OrdemHistorico  # noqa: F401
 from app.models.notification import (  # noqa: F401
@@ -57,4 +59,6 @@ __all__ = [
     "OrdemDocumento",
     # Sprint 11 — S11.1
     "Fornecedor",
+    # Sprint 12 — S12.2
+    "FornecedorDocumento",
 ]

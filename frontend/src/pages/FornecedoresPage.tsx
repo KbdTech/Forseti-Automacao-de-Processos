@@ -37,7 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { listSecretarias } from '@/services/secretariasService'
 import { listFornecedores } from '@/services/fornecedoresService'
 import { FornecedorDetailSheet } from '@/components/fornecedores/FornecedorDetailSheet'
-import { formatBRL, formatCNPJ } from '@/utils/formatters'
+import { formatBRL, formatCNPJ, formatNomeSecretaria } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Hook de debounce (300ms) — padrão interno do projeto
@@ -66,8 +66,8 @@ function TableSkeleton() {
           <TableCell><Skeleton className="h-4 w-52" /></TableCell>
           <TableCell><Skeleton className="h-4 w-32" /></TableCell>
           <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
           <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-20" /></TableCell>
           <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
           <TableCell />
         </TableRow>
@@ -166,7 +166,7 @@ export default function FornecedoresPage() {
               <TableRow>
                 <TableHead>Razão Social</TableHead>
                 <TableHead>CNPJ</TableHead>
-                <TableHead>Nº Processo</TableHead>
+                <TableHead>Valor Usado</TableHead>
                 <TableHead>Valor Contratado</TableHead>
                 <TableHead>Secretaria</TableHead>
                 <TableHead>Status</TableHead>
@@ -217,16 +217,16 @@ export default function FornecedoresPage() {
                   <TableCell className="font-mono text-sm whitespace-nowrap">
                     {formatCNPJ(f.cnpj)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {f.numero_processo ?? '—'}
+                  <TableCell className="text-sm whitespace-nowrap tabular-nums">
+                    {formatBRL(f.total_pago ?? 0)}
                   </TableCell>
-                  <TableCell className="text-sm whitespace-nowrap font-medium">
-                    {formatBRL(f.valor_contratado)}
+                  <TableCell className="text-sm whitespace-nowrap font-medium tabular-nums">
+                    {f.valor_contratado != null ? formatBRL(f.valor_contratado) : '—'}
                   </TableCell>
                   <TableCell className="text-sm">
                     {f.secretaria_nome ? (
                       <span title={f.secretaria_nome} className="truncate max-w-[140px] block">
-                        {f.secretaria_nome}
+                        {formatNomeSecretaria(f.secretaria_nome)}
                       </span>
                     ) : (
                       <Badge variant="outline" className="text-xs">Global</Badge>

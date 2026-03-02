@@ -36,6 +36,8 @@ from app.schemas.fornecedor import (
     OrdemResumoItem,
 )
 
+_ZERO = __import__("decimal").Decimal(0)
+
 
 class FornecedorService:
     """Encapsula a lógica de negócio de gestão de fornecedores.
@@ -47,15 +49,59 @@ class FornecedorService:
     # Helpers privados
     # ---------------------------------------------------------------------------
 
-    def _build_response(self, fornecedor: Fornecedor) -> FornecedorResponse:
-        """Constrói FornecedorResponse com secretaria_nome desnormalizado.
+    def _build_response(
+        self,
+        fornecedor: Fornecedor,
+        total_pago_map: dict | None = None,
+    ) -> FornecedorResponse:
+        """Constrói FornecedorResponse com secretaria_nome e total_pago desnormalizados.
 
-        Requer que fornecedor.secretaria esteja carregado via selectinload.
+        Args:
+            fornecedor: instância com secretaria já carregada via selectinload.
+            total_pago_map: dict {fornecedor_id: Decimal} pré-calculado (batch).
         """
+        from decimal import Decimal
+
         data = FornecedorResponse.model_validate(fornecedor)
         if fornecedor.secretaria is not None:
             data.secretaria_nome = fornecedor.secretaria.nome
+        if total_pago_map is not None:
+            data.total_pago = total_pago_map.get(fornecedor.id, Decimal(0))
         return data
+
+    async def _batch_total_pago(
+        self,
+        db: AsyncSession,
+        fornecedor_ids: list,
+    ) -> dict:
+        """Consulta o total pago por fornecedor em uma única query batch.
+
+        Returns:
+            dict {fornecedor_id (UUID): Decimal total_pago}
+        """
+        from decimal import Decimal
+        import uuid as _uuid
+
+        if not fornecedor_ids:
+            return {}
+
+        stmt = (
+            select(
+                Ordem.fornecedor_id,
+                func.sum(Ordem.valor_pago).label("total_pago"),
+            )
+            .where(
+                Ordem.fornecedor_id.in_(fornecedor_ids),
+                Ordem.status == StatusOrdemEnum.PAGA,
+                Ordem.valor_pago.is_not(None),
+            )
+            .group_by(Ordem.fornecedor_id)
+        )
+        result = await db.execute(stmt)
+        return {
+            row.fornecedor_id: row.total_pago or Decimal(0)
+            for row in result
+        }
 
     def _apply_scope(self, stmt, user: User):
         """Aplica scoping de secretaria conforme o role do usuário.
@@ -139,8 +185,12 @@ class FornecedorService:
 
         pages = math.ceil(total / limit) if limit > 0 else 0
 
+        # Batch-load total_pago para todos os fornecedores da página
+        ids = [f.id for f in fornecedores]
+        total_pago_map = await self._batch_total_pago(db, ids)
+
         return FornecedorListResponse(
-            items=[self._build_response(f) for f in fornecedores],
+            items=[self._build_response(f, total_pago_map) for f in fornecedores],
             total=total,
             page=page,
             pages=pages,
@@ -248,7 +298,8 @@ class FornecedorService:
                     detail="Fornecedor não encontrado.",
                 )
 
-        return self._build_response(fornecedor)
+        total_pago_map = await self._batch_total_pago(db, [fornecedor.id])
+        return self._build_response(fornecedor, total_pago_map)
 
     # ---------------------------------------------------------------------------
     # update_fornecedor — PUT /api/fornecedores/{id}

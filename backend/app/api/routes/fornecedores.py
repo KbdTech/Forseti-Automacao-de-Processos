@@ -14,7 +14,7 @@ S11.1 Cenário 5/6: scoping RBAC na listagem aplicado no service.
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, require_role
@@ -22,12 +22,15 @@ from app.core.database import get_db
 from app.models.user import RoleEnum, User
 from app.schemas.fornecedor import (
     FornecedorCreate,
+    FornecedorDocumentoDownloadUrl,
+    FornecedorDocumentoResponse,
     FornecedorListResponse,
     FornecedorResponse,
     FornecedorResumoResponse,
     FornecedorStatusUpdate,
     FornecedorUpdate,
 )
+from app.services.fornecedor_documento_service import fornecedor_documento_service
 from app.services.fornecedor_service import fornecedor_service
 
 router = APIRouter(prefix="/api/fornecedores", tags=["Fornecedores"])
@@ -209,4 +212,108 @@ async def toggle_status(
     """
     return await fornecedor_service.toggle_status(
         db=db, fornecedor_id=fornecedor_id, is_active=payload.is_active, user=current_user
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/fornecedores/{id}/documentos — listar documentos
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{fornecedor_id}/documentos",
+    response_model=list[FornecedorDocumentoResponse],
+    status_code=200,
+)
+async def list_documentos(
+    fornecedor_id: uuid.UUID,
+    current_user: AnyAuthenticated,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[FornecedorDocumentoResponse]:
+    """Lista todos os documentos de um fornecedor."""
+    docs = await fornecedor_documento_service.list_by_fornecedor(db, fornecedor_id)
+    return [FornecedorDocumentoResponse.model_validate(d) for d in docs]
+
+
+# ---------------------------------------------------------------------------
+# POST /api/fornecedores/{id}/documentos — upload de documento
+# ---------------------------------------------------------------------------
+
+
+@router.post(
+    "/{fornecedor_id}/documentos",
+    response_model=FornecedorDocumentoResponse,
+    status_code=201,
+    responses={
+        404: {"description": "Fornecedor não encontrado"},
+        403: {"description": "Acesso negado — admin ou compras obrigatório"},
+        422: {"description": "Arquivo inválido (tipo/tamanho)"},
+    },
+)
+async def upload_documento(
+    fornecedor_id: uuid.UUID,
+    current_user: ComprasOrAdmin,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    file: Annotated[UploadFile, File(description="Arquivo PDF, JPEG ou PNG (máx. 20 MB).")],
+    descricao: Annotated[str | None, Form(description="Descrição opcional do documento.")] = None,
+) -> FornecedorDocumentoResponse:
+    """Faz upload de um documento para o fornecedor.
+
+    Apenas admin e perfil compras podem fazer upload.
+    """
+    doc = await fornecedor_documento_service.upload(
+        db=db,
+        fornecedor_id=fornecedor_id,
+        uploader_id=current_user.id,
+        file=file,
+        descricao=descricao,
+    )
+    return FornecedorDocumentoResponse.model_validate(doc)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/fornecedores/documentos/{doc_id}/download-url
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/documentos/{doc_id}/download-url",
+    response_model=FornecedorDocumentoDownloadUrl,
+    status_code=200,
+    responses={404: {"description": "Documento não encontrado"}},
+)
+async def get_download_url(
+    doc_id: uuid.UUID,
+    current_user: AnyAuthenticated,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FornecedorDocumentoDownloadUrl:
+    """Gera URL assinada para download de documento do fornecedor (TTL: 15 min)."""
+    url = await fornecedor_documento_service.get_download_url(db, doc_id)
+    return FornecedorDocumentoDownloadUrl(download_url=url)
+
+
+# ---------------------------------------------------------------------------
+# DELETE /api/fornecedores/documentos/{doc_id}
+# ---------------------------------------------------------------------------
+
+
+@router.delete(
+    "/documentos/{doc_id}",
+    status_code=204,
+    responses={
+        403: {"description": "Sem permissão"},
+        404: {"description": "Documento não encontrado"},
+    },
+)
+async def delete_documento(
+    doc_id: uuid.UUID,
+    current_user: AnyAuthenticated,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    """Remove documento do fornecedor (admin, compras ou próprio uploader)."""
+    await fornecedor_documento_service.delete(
+        db=db,
+        doc_id=doc_id,
+        requester_id=current_user.id,
+        requester_role=current_user.role.value,
     )
