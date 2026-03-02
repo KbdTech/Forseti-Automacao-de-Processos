@@ -1,11 +1,12 @@
 """Schemas Pydantic v2 para o recurso Fornecedor — S11.1.
 
 Mapeamento de uso:
-  FornecedorCreate       → POST /api/fornecedores
-  FornecedorUpdate       → PUT  /api/fornecedores/{id}
-  FornecedorStatusUpdate → PATCH /api/fornecedores/{id}/status
-  FornecedorResponse     → Resposta padrão
-  FornecedorListResponse → GET /api/fornecedores (paginado)
+  FornecedorCreate          → POST /api/fornecedores
+  FornecedorUpdate          → PUT  /api/fornecedores/{id}
+  FornecedorStatusUpdate    → PATCH /api/fornecedores/{id}/status
+  FornecedorResponse        → Resposta padrão
+  FornecedorListResponse    → GET /api/fornecedores (paginado)
+  FornecedorResumoResponse  → GET /api/fornecedores/{id}/resumo (detalhe com gastos)
 """
 
 from __future__ import annotations
@@ -208,3 +209,70 @@ class FornecedorListResponse(BaseModel):
     total: Annotated[int, Field(description="Total de registros com os filtros aplicados.")]
     page: Annotated[int, Field(description="Página atual (1-based).")]
     pages: Annotated[int, Field(description="Total de páginas.")]
+
+
+# ---------------------------------------------------------------------------
+# Resumo financeiro do fornecedor — GET /api/fornecedores/{id}/resumo
+# ---------------------------------------------------------------------------
+
+
+class GastoMes(BaseModel):
+    """Gasto de um fornecedor em um mês específico (dados para gráfico de barras)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    mes: Annotated[str, Field(description="Mês no formato 'YYYY-MM'.")]
+    total_pago: Annotated[Decimal, Field(description="Total pago no mês em R$.")]
+    count_ordens: Annotated[int, Field(description="Número de ordens pagas no mês.")]
+
+
+class OrdemResumoItem(BaseModel):
+    """Item resumido de ordem para exibição no detalhe do fornecedor."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: Annotated[uuid.UUID, Field(description="UUID da ordem.")]
+    protocolo: Annotated[str, Field(description="Protocolo (OS-ANO-SEQ).")]
+    status: Annotated[str, Field(description="Status da ordem.")]
+    valor_pago: Annotated[Decimal | None, Field(default=None, description="Valor pago.")]
+    data_pagamento: Annotated[date | None, Field(default=None, description="Data do pagamento.")]
+    secretaria_nome: Annotated[str | None, Field(default=None, description="Nome da secretaria.")]
+
+
+class FornecedorResumoResponse(BaseModel):
+    """Detalhe completo de um fornecedor com estatísticas de gastos e histórico.
+
+    Retornado por GET /api/fornecedores/{id}/resumo.
+    Inclui todos os campos de FornecedorResponse mais métricas financeiras calculadas.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    # Dados cadastrais
+    id: Annotated[uuid.UUID, Field(description="UUID do fornecedor.")]
+    razao_social: Annotated[str, Field(description="Razão social.")]
+    nome_fantasia: Annotated[str | None, Field(default=None, description="Nome fantasia.")]
+    cnpj: Annotated[str, Field(description="CNPJ sem pontuação (14 dígitos).")]
+    numero_processo: Annotated[str | None, Field(default=None)]
+    objeto_contrato: Annotated[str | None, Field(default=None)]
+    valor_contratado: Annotated[Decimal | None, Field(default=None)]
+    data_contrato: Annotated[date | None, Field(default=None)]
+    banco: Annotated[str | None, Field(default=None)]
+    agencia: Annotated[str | None, Field(default=None)]
+    conta: Annotated[str | None, Field(default=None)]
+    tipo_conta: Annotated[str, Field(default="corrente")]
+    secretaria_id: Annotated[uuid.UUID | None, Field(default=None)]
+    secretaria_nome: Annotated[str | None, Field(default=None)]
+    is_active: Annotated[bool, Field()]
+
+    # Estatísticas financeiras
+    total_pago: Annotated[Decimal, Field(description="Total já pago em ordens com status PAGA.")]
+    total_ordens_pagas: Annotated[int, Field(description="Número de ordens pagas.")]
+    saldo_disponivel: Annotated[Decimal, Field(description="Saldo disponível (valor_contratado − total_pago).")]
+    percentual_utilizado: Annotated[float, Field(description="Percentual do contrato utilizado (0–100).")]
+
+    # Dados para gráfico de barras mensais
+    gastos_por_mes: Annotated[list[GastoMes], Field(default_factory=list)]
+
+    # Últimas ordens pagas (até 10)
+    ultimas_ordens: Annotated[list[OrdemResumoItem], Field(default_factory=list)]

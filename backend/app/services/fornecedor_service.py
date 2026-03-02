@@ -21,14 +21,19 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.enums import StatusOrdemEnum
 from app.models.fornecedor import Fornecedor
+from app.models.ordem import Ordem
 from app.models.secretaria import Secretaria
 from app.models.user import RoleEnum, User
 from app.schemas.fornecedor import (
     FornecedorCreate,
     FornecedorListResponse,
     FornecedorResponse,
+    FornecedorResumoResponse,
     FornecedorUpdate,
+    GastoMes,
+    OrdemResumoItem,
 )
 
 
@@ -327,6 +332,134 @@ class FornecedorService:
 
         loaded = await self._load(db, fornecedor.id)
         return self._build_response(loaded)
+
+    # ---------------------------------------------------------------------------
+    # get_resumo — GET /api/fornecedores/{id}/resumo
+    # ---------------------------------------------------------------------------
+
+    async def get_resumo(
+        self,
+        db: AsyncSession,
+        fornecedor_id: UUID,
+        user: User,
+    ) -> FornecedorResumoResponse:
+        """Retorna detalhe completo do fornecedor com estatísticas financeiras.
+
+        Calcula:
+          - total_pago: soma de valor_pago em ordens PAGA vinculadas
+          - saldo_disponivel: valor_contratado - total_pago
+          - percentual_utilizado: proporção usada do contrato
+          - gastos_por_mes: agregação mensal para gráfico de barras
+          - ultimas_ordens: até 10 ordens PAGA mais recentes
+
+        Aplica scoping idêntico ao get_fornecedor.
+        """
+        from decimal import Decimal
+
+        fornecedor = await self._load(db, fornecedor_id)
+        if fornecedor is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Fornecedor não encontrado.",
+            )
+
+        # Scoping para secretaria
+        if user.role == RoleEnum.secretaria:
+            if (
+                fornecedor.secretaria_id is not None
+                and fornecedor.secretaria_id != user.secretaria_id
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Fornecedor não encontrado.",
+                )
+
+        # Gastos mensais — ordens PAGA com data_pagamento e valor_pago preenchidos
+        monthly_stmt = (
+            select(
+                func.to_char(Ordem.data_pagamento, "YYYY-MM").label("mes"),
+                func.sum(Ordem.valor_pago).label("total_pago"),
+                func.count().label("count_ordens"),
+            )
+            .where(
+                Ordem.fornecedor_id == fornecedor_id,
+                Ordem.status == StatusOrdemEnum.PAGA,
+                Ordem.valor_pago.is_not(None),
+                Ordem.data_pagamento.is_not(None),
+            )
+            .group_by(func.to_char(Ordem.data_pagamento, "YYYY-MM"))
+            .order_by(func.to_char(Ordem.data_pagamento, "YYYY-MM"))
+        )
+        monthly_result = await db.execute(monthly_stmt)
+        gastos_por_mes = [
+            GastoMes(
+                mes=row.mes,
+                total_pago=row.total_pago or Decimal(0),
+                count_ordens=row.count_ordens,
+            )
+            for row in monthly_result
+        ]
+
+        total_pago = sum((g.total_pago for g in gastos_por_mes), Decimal(0))
+        total_ordens_pagas = sum(g.count_ordens for g in gastos_por_mes)
+
+        valor_contratado = fornecedor.valor_contratado or Decimal(0)
+        saldo_disponivel = max(valor_contratado - total_pago, Decimal(0))
+        percentual_utilizado = (
+            round(float(total_pago / valor_contratado * 100), 1)
+            if valor_contratado > 0
+            else 0.0
+        )
+
+        # Últimas 10 ordens PAGA vinculadas a este fornecedor
+        last_ordens_stmt = (
+            select(Ordem)
+            .where(
+                Ordem.fornecedor_id == fornecedor_id,
+                Ordem.status == StatusOrdemEnum.PAGA,
+            )
+            .options(selectinload(Ordem.secretaria))
+            .order_by(Ordem.data_pagamento.desc().nullslast())
+            .limit(10)
+        )
+        last_result = await db.execute(last_ordens_stmt)
+        last_ordens = last_result.scalars().all()
+
+        ultimas_ordens = [
+            OrdemResumoItem(
+                id=o.id,
+                protocolo=o.protocolo,
+                status=o.status.value,
+                valor_pago=o.valor_pago,
+                data_pagamento=o.data_pagamento,
+                secretaria_nome=o.secretaria.nome if o.secretaria else None,
+            )
+            for o in last_ordens
+        ]
+
+        return FornecedorResumoResponse(
+            id=fornecedor.id,
+            razao_social=fornecedor.razao_social,
+            nome_fantasia=fornecedor.nome_fantasia,
+            cnpj=fornecedor.cnpj,
+            numero_processo=fornecedor.numero_processo,
+            objeto_contrato=fornecedor.objeto_contrato,
+            valor_contratado=fornecedor.valor_contratado,
+            data_contrato=fornecedor.data_contrato,
+            banco=fornecedor.banco,
+            agencia=fornecedor.agencia,
+            conta=fornecedor.conta,
+            tipo_conta=fornecedor.tipo_conta,
+            secretaria_id=fornecedor.secretaria_id,
+            secretaria_nome=fornecedor.secretaria.nome if fornecedor.secretaria else None,
+            is_active=fornecedor.is_active,
+            total_pago=total_pago,
+            total_ordens_pagas=total_ordens_pagas,
+            saldo_disponivel=saldo_disponivel,
+            percentual_utilizado=percentual_utilizado,
+            gastos_por_mes=gastos_por_mes,
+            ultimas_ordens=ultimas_ordens,
+        )
 
     # ---------------------------------------------------------------------------
     # _load — helper interno

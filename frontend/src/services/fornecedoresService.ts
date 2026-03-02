@@ -10,7 +10,7 @@
  */
 
 import apiClient from '@/services/apiClient'
-import type { FornecedorResponse, FornecedorListResponse, FornecedoresFilters } from '@/types/fornecedor'
+import type { FornecedorResponse, FornecedorListResponse, FornecedoresFilters, FornecedorResumo } from '@/types/fornecedor'
 
 export interface FornecedorCreate {
   razao_social: string
@@ -81,5 +81,11 @@ export async function toggleFornecedorStatus(
     `/api/fornecedores/${id}/status`,
     { is_active: isActive },
   )
+  return data
+}
+
+/** GET /api/fornecedores/{id}/resumo — detalhe com estatísticas financeiras. */
+export async function getFornecedorResumo(id: string): Promise<FornecedorResumo> {
+  const { data } = await apiClient.get<FornecedorResumo>(`/api/fornecedores/${id}/resumo`)
   return data
 }

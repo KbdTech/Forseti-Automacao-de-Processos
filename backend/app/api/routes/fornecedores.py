@@ -24,6 +24,7 @@ from app.schemas.fornecedor import (
     FornecedorCreate,
     FornecedorListResponse,
     FornecedorResponse,
+    FornecedorResumoResponse,
     FornecedorStatusUpdate,
     FornecedorUpdate,
 )
@@ -106,6 +107,27 @@ async def create_fornecedor(
 # ---------------------------------------------------------------------------
 # GET /api/fornecedores/{id}
 # ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/{fornecedor_id}/resumo",
+    response_model=FornecedorResumoResponse,
+    status_code=200,
+    responses={404: {"description": "Fornecedor não encontrado"}},
+)
+async def get_fornecedor_resumo(
+    fornecedor_id: uuid.UUID,
+    current_user: AnyAuthenticated,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FornecedorResumoResponse:
+    """Retorna detalhe completo do fornecedor com estatísticas financeiras.
+
+    Inclui: total pago, saldo disponível, percentual utilizado,
+    gastos mensais (para gráfico) e últimas ordens pagas.
+    """
+    return await fornecedor_service.get_resumo(
+        db=db, fornecedor_id=fornecedor_id, user=current_user
+    )
 
 
 @router.get(

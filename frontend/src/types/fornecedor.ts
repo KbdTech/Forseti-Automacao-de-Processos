@@ -36,3 +36,37 @@ export interface FornecedoresFilters {
   page?: number
   limit?: number
 }
+
+// ---------------------------------------------------------------------------
+// Resumo financeiro — GET /api/fornecedores/{id}/resumo
+// ---------------------------------------------------------------------------
+
+export interface GastoMes {
+  /** Mês no formato "YYYY-MM" */
+  mes: string
+  total_pago: number
+  count_ordens: number
+}
+
+export interface OrdemResumoItem {
+  id: string
+  protocolo: string
+  status: string
+  valor_pago: number | null
+  data_pagamento: string | null
+  secretaria_nome: string | null
+}
+
+export interface FornecedorResumo extends FornecedorResponse {
+  /** Total já pago em ordens com status PAGA. */
+  total_pago: number
+  total_ordens_pagas: number
+  /** Saldo disponível (valor_contratado − total_pago). */
+  saldo_disponivel: number
+  /** Percentual do contrato utilizado (0–100). */
+  percentual_utilizado: number
+  /** Dados mensais para gráfico de barras. */
+  gastos_por_mes: GastoMes[]
+  /** Até 10 últimas ordens pagas. */
+  ultimas_ordens: OrdemResumoItem[]
+}
