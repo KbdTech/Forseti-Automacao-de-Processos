@@ -17,7 +17,7 @@ import math
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -374,7 +374,10 @@ class FornecedorService:
                     detail="Fornecedor não encontrado.",
                 )
 
-        # Gastos mensais — ordens PAGA com data_pagamento e valor_pago preenchidos
+        # Gastos mensais — ordens PAGA com data_pagamento e valor_pago preenchidos.
+        # Usa referência posicional (text("1")) no GROUP BY e ORDER BY para evitar
+        # que o SQLAlchemy gere parâmetros bind separados ($1, $4, $5) para cada
+        # chamada a func.to_char — o PostgreSQL rejeitaria as expressões como distintas.
         monthly_stmt = (
             select(
                 func.to_char(Ordem.data_pagamento, "YYYY-MM").label("mes"),
@@ -387,8 +390,8 @@ class FornecedorService:
                 Ordem.valor_pago.is_not(None),
                 Ordem.data_pagamento.is_not(None),
             )
-            .group_by(func.to_char(Ordem.data_pagamento, "YYYY-MM"))
-            .order_by(func.to_char(Ordem.data_pagamento, "YYYY-MM"))
+            .group_by(text("1"))
+            .order_by(text("1"))
         )
         monthly_result = await db.execute(monthly_stmt)
         gastos_por_mes = [
