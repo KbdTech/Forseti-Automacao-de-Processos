@@ -135,7 +135,8 @@
 | S9 | BUG-002, BUG-003, UX-002, US-022, US-023, S9.6 | Correções, UX e Estabilidade | ✅ Done |
 | S10 | US-024, US-025, UX-004 | Filtros, Admin e Comprovante Obrigatório | ✅ Done |
 | S11 | S11.1, S11.2, S11.3 | Módulo Fornecedores — Fundação | 🔜 Planejada |
-| S12 | S12.1, S12.2, S12.3 | Módulo Fornecedores — Pipeline e Relatórios | 🔜 Planejada |
+| S12 | S12.1, S12.2, S12.3 | Módulo Fornecedores — Pipeline e Relatórios | ✅ Done |
+| S13 | S13.1, S13.2 | Perfil `compras` — Setor de Compras/Licitações | 📋 Draft |
 
 ---
 
@@ -221,6 +222,20 @@ Todo story deve ter estes itens antes de ser marcado como Done:
 | S12.3 | [S12.3-relatorio-gastos-fornecedor.story.md](./S12.3-relatorio-gastos-fornecedor.story.md) | Relatório de Gastos por Fornecedor (multi-perfil) | 8 pts | @dev | Draft |
 
 **Sprint 12 Total:** 16 pontos
+
+---
+
+---
+
+## Sprint 13 — Perfil `compras` — Setor de Compras/Licitações (planejada)
+**Objetivo:** Criar perfil de acesso exclusivo para o Setor de Compras gerenciar fornecedores sem participar do fluxo de ordens.
+
+| ID | Arquivo | Título | Estimativa | Status |
+|----|---------|--------|-----------|--------|
+| S13.1 | [S13.1-perfil-compras-backend.story.md](./S13.1-perfil-compras-backend.story.md) | Backend: enum `compras` + migration + RBAC em fornecedores | 3 pts | Draft |
+| S13.2 | [S13.2-perfil-compras-frontend.story.md](./S13.2-perfil-compras-frontend.story.md) | Frontend: role guard, sidebar e rota para perfil `compras` | 3 pts | Draft |
+
+**Sprint 13 Total:** 6 pontos
 
 ---
 
