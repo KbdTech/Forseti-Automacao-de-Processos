@@ -52,6 +52,7 @@ if TYPE_CHECKING:
     from app.models.secretaria import Secretaria
     from app.models.user import User
     from app.models.documento import OrdemDocumento  # US-015
+    from app.models.fornecedor import Fornecedor  # S11.1
 
 
 class Ordem(Base):
@@ -166,6 +167,17 @@ class Ordem(Base):
         default=False,
         server_default=text("false"),
         comment="US-016: indica se a OS foi assinada digitalmente via GovBR (declaração do usuário)",
+    )
+
+    # ------------------------------------------------------------------
+    # Fornecedor vencedor da licitação (S11.1)
+    # ------------------------------------------------------------------
+
+    fornecedor_id: Mapped[uuid.UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("fornecedores.id", ondelete="SET NULL", name="fk_ordens_fornecedor_id"),
+        nullable=True,
+        comment="FK para o fornecedor vencedor da licitação (nullable — compat. histórica S11.1)",
     )
 
     # ------------------------------------------------------------------
@@ -294,6 +306,13 @@ class Ordem(Base):
         foreign_keys="OrdemDocumento.ordem_id",
         order_by="OrdemDocumento.created_at",
     )
+    # S11.1: fornecedor vencedor da licitação (nullable — compat. histórica)
+    fornecedor: Mapped["Fornecedor | None"] = relationship(
+        "Fornecedor",
+        lazy="noload",
+        foreign_keys=[fornecedor_id],
+        back_populates="ordens",
+    )
 
     # ------------------------------------------------------------------
     # Índices — CLAUDE.md §8: índices obrigatórios
@@ -305,6 +324,7 @@ class Ordem(Base):
         Index("idx_ordens_status", "status"),
         Index("idx_ordens_created_at", "created_at"),
         Index("idx_ordens_criado_por", "criado_por"),
+        Index("idx_ordens_fornecedor_id", "fornecedor_id"),  # S11.1
         # protocolo tem unique=True → index automático no PostgreSQL
     )
 

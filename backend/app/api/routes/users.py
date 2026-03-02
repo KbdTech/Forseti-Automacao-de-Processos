@@ -152,6 +152,32 @@ async def update_user(
 
 
 @router.put(
+    "/{user_id}/reset-password",
+    response_model=UserResponse,
+    status_code=200,
+    responses={
+        404: {"description": "Usuário não encontrado"},
+    },
+)
+async def reset_user_password(
+    user_id: uuid.UUID,
+    current_user: AdminRequired,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> UserResponse:
+    """Reseta a senha de um usuário forçando troca no próximo acesso.
+
+    US-025: define first_login=True, login_attempts=0, locked_until=None.
+    O usuário será redirecionado para criar nova senha no próximo login.
+    Operação registrada em audit_logs com action='password_reset'.
+    """
+    return await user_service.reset_password(
+        db=db,
+        user_id=user_id,
+        reset_by=current_user.id,
+    )
+
+
+@router.put(
     "/{user_id}/role",
     response_model=UserResponse,
     status_code=200,

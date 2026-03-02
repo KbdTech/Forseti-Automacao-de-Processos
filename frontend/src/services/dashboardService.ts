@@ -94,6 +94,48 @@ export async function getSummary(
   return data
 }
 
+// ---------------------------------------------------------------------------
+// S12.3 — Gastos por fornecedor
+// ---------------------------------------------------------------------------
+
+export interface GastoFornecedorItem {
+  fornecedor_id: string
+  razao_social: string
+  cnpj: string
+  total_pago: number
+  count_ordens: number
+  secretaria_nome: string | null
+}
+
+/**
+ * GET /api/dashboard/gastos-fornecedor
+ *
+ * S12.3: gastos consolidados por fornecedor (ordens PAGAS no período).
+ * Scoping automático pelo backend:
+ *   - secretaria: vê apenas própria secretaria.
+ *   - demais: veem tudo (ou filtram por secretaria_id).
+ *
+ * @param data_inicio YYYY-MM-DD (padrão: 1º dia do mês atual)
+ * @param data_fim    YYYY-MM-DD (padrão: hoje)
+ * @param secretaria_id UUID (opcional — perfis globais)
+ */
+export async function getGastosFornecedor(params: {
+  data_inicio?: string
+  data_fim?: string
+  secretaria_id?: string
+}): Promise<GastoFornecedorItem[]> {
+  const query: Record<string, string> = {}
+  if (params.data_inicio) query.data_inicio = params.data_inicio
+  if (params.data_fim) query.data_fim = params.data_fim
+  if (params.secretaria_id) query.secretaria_id = params.secretaria_id
+
+  const { data } = await apiClient.get<GastoFornecedorItem[]>(
+    '/api/dashboard/gastos-fornecedor',
+    { params: query },
+  )
+  return data
+}
+
 /**
  * GET /api/dashboard/alertas
  *

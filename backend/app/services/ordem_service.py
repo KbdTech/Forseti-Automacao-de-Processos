@@ -21,11 +21,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.enums import PrioridadeEnum, StatusOrdemEnum, TipoOrdemEnum
+from app.models.fornecedor import Fornecedor  # S11.1
 from app.models.ordem import Ordem
 from app.models.ordem_historico import OrdemHistorico
 from app.models.secretaria import Secretaria
 from app.models.user import RoleEnum, User
 from app.schemas.ordem import (
+    FornecedorBasico,
     OrdemCreate,
     OrdemDetailResponse,
     OrdemHistoricoResponse,
@@ -58,6 +60,11 @@ class OrdemService:
         Returns:
             OrdemResponse pronto para serialização.
         """
+        # S11.1: inclui dados do fornecedor vinculado (nullable para ordens históricas)
+        fornecedor_data: FornecedorBasico | None = None
+        if ordem.fornecedor is not None:
+            fornecedor_data = FornecedorBasico.model_validate(ordem.fornecedor)
+
         return OrdemResponse(
             id=ordem.id,
             protocolo=ordem.protocolo,
@@ -74,6 +81,7 @@ class OrdemService:
             status=ordem.status,
             versao=ordem.versao,
             assinatura_govbr=ordem.assinatura_govbr,  # US-016
+            fornecedor=fornecedor_data,               # S11.1
             # Pipeline financeiro (todos nullable)
             numero_empenho=ordem.numero_empenho,
             valor_empenhado=ordem.valor_empenhado,
@@ -111,6 +119,7 @@ class OrdemService:
             .options(
                 selectinload(Ordem.secretaria),
                 selectinload(Ordem.criador),
+                selectinload(Ordem.fornecedor),  # S11.1
             )
             .execution_options(populate_existing=True)
         )
@@ -198,6 +207,19 @@ class OrdemService:
         # Gera protocolo atômico (US-003 RN-13)
         protocolo = await self._gerar_protocolo(db)
 
+        # S11.1: valida fornecedor_id — obrigatório para novas ordens
+        fornecedor_obj = await db.get(Fornecedor, data.fornecedor_id)
+        if fornecedor_obj is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Fornecedor não encontrado.",
+            )
+        if not fornecedor_obj.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Fornecedor inativo. Selecione um fornecedor ativo.",
+            )
+
         # Cria a ordem — status inicial = AGUARDANDO_GABINETE (US-003 RN-20)
         ordem = Ordem(
             protocolo=protocolo,
@@ -212,6 +234,7 @@ class OrdemService:
             status=StatusOrdemEnum.AGUARDANDO_GABINETE,
             versao=1,
             assinatura_govbr=data.assinatura_govbr,  # US-016
+            fornecedor_id=data.fornecedor_id,         # S11.1
         )
         db.add(ordem)
         await db.flush()  # persiste para obter ordem.id antes do histórico
@@ -249,6 +272,9 @@ class OrdemService:
         status_filter: str | None = None,
         protocolo_filter: str | None = None,
         secretaria_filter: UUID | None = None,
+        prioridade_filter: str | None = None,
+        data_inicio_filter: datetime | None = None,
+        data_fim_filter: datetime | None = None,
     ) -> OrdemListResponse:
         """Lista ordens com RBAC scoping, filtros e paginação.
 
@@ -301,6 +327,30 @@ class OrdemService:
         if protocolo_filter is not None:
             base_query = base_query.where(Ordem.protocolo == protocolo_filter)
             count_query = count_query.where(Ordem.protocolo == protocolo_filter)
+
+        # Filtro por prioridade — US-024
+        if prioridade_filter is not None:
+            try:
+                prioridade_enum = PrioridadeEnum(prioridade_filter)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Prioridade inválida: '{prioridade_filter}'. "
+                        f"Valores aceitos: {[p.value for p in PrioridadeEnum]}."
+                    ),
+                )
+            base_query = base_query.where(Ordem.prioridade == prioridade_enum)
+            count_query = count_query.where(Ordem.prioridade == prioridade_enum)
+
+        # Filtros por período de criação — US-024
+        if data_inicio_filter is not None:
+            base_query = base_query.where(Ordem.created_at >= data_inicio_filter)
+            count_query = count_query.where(Ordem.created_at >= data_inicio_filter)
+
+        if data_fim_filter is not None:
+            base_query = base_query.where(Ordem.created_at <= data_fim_filter)
+            count_query = count_query.where(Ordem.created_at <= data_fim_filter)
 
         # Total com filtros aplicados
         total_result = await db.execute(count_query)

@@ -20,9 +20,11 @@ from __future__ import annotations
 import calendar
 import uuid
 from datetime import date
+from decimal import Decimal
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, require_role
@@ -179,3 +181,91 @@ async def get_alertas(
         403: perfil não autorizado.
     """
     return await dashboard_service.get_alertas(db=db)
+
+
+# ---------------------------------------------------------------------------
+# Schema de resposta — S12.3
+# ---------------------------------------------------------------------------
+
+
+class GastoFornecedorResponse(BaseModel):
+    """Item consolidado de gastos por fornecedor — S12.3."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    fornecedor_id: uuid.UUID
+    razao_social: str
+    cnpj: str
+    total_pago: Decimal
+    count_ordens: int
+    secretaria_nome: str | None
+
+
+# ---------------------------------------------------------------------------
+# GET /api/dashboard/gastos-fornecedor — S12.3
+# ---------------------------------------------------------------------------
+
+
+@router.get(
+    "/gastos-fornecedor",
+    summary="Gastos consolidados por fornecedor (ordens PAGAS)",
+    response_model=list[GastoFornecedorResponse],
+)
+async def gastos_por_fornecedor(
+    current_user: AnyAuthenticated,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    data_inicio: date | None = Query(
+        None,
+        description="Início do período (YYYY-MM-DD). Padrão: 1º dia do mês atual.",
+    ),
+    data_fim: date | None = Query(
+        None,
+        description="Fim do período (YYYY-MM-DD). Padrão: hoje.",
+    ),
+    secretaria_id: uuid.UUID | None = Query(
+        None,
+        description="Filtrar por secretaria (apenas perfis globais).",
+    ),
+) -> list[GastoFornecedorResponse]:
+    """Retorna gastos consolidados por fornecedor nas ordens com status PAGA.
+
+    Perfis autorizados: todos os autenticados.
+
+    Scoping:
+      - secretaria: vê apenas gastos da própria secretaria.
+      - demais perfis: veem tudo (ou filtram por secretaria_id).
+
+    Padrão de período: se não informado, usa o mês corrente
+    (1º dia até hoje).
+
+    S12.3.
+    """
+    from datetime import date as _date
+
+    today = _date.today()
+
+    # Período padrão: mês corrente
+    periodo_inicio = data_inicio or today.replace(day=1)
+    periodo_fim = data_fim or today
+
+    if periodo_inicio > periodo_fim:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="data_inicio não pode ser posterior a data_fim.",
+        )
+
+    # Scoping: secretaria vê apenas própria secretaria
+    scoped_id = (
+        current_user.secretaria_id
+        if current_user.role == RoleEnum.secretaria
+        else None
+    )
+
+    rows = await dashboard_service.get_gastos_fornecedor(
+        db=db,
+        data_inicio=periodo_inicio,
+        data_fim=periodo_fim,
+        scoped_secretaria_id=scoped_id,
+        filtro_secretaria_id=secretaria_id if scoped_id is None else None,
+    )
+    return [GastoFornecedorResponse(**row) for row in rows]

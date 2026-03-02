@@ -12,6 +12,7 @@ from app.api.routes import audit as audit_router
 from app.api.routes import dashboard as dashboard_router
 from app.api.routes import notifications as notifications_router
 from app.api.routes import documentos as documentos_router
+from app.api.routes import fornecedores as fornecedores_router  # S11.1
 from app.services.documento_service import documento_service
 
 
@@ -48,6 +49,7 @@ app.include_router(dashboard_router.router)   # US-011: /api/dashboard/*
 app.include_router(audit_router.router)       # US-012: /api/ordens/{id}/historico + /api/audit-logs
 app.include_router(notifications_router.router) # US-014: /api/notifications/preferences
 app.include_router(documentos_router.router)    # US-015: /api/ordens/{id}/documentos + /api/documentos/{id}/*
+app.include_router(fornecedores_router.router)  # S11.1: /api/fornecedores/*
 
 
 @app.get("/health", tags=["infra"])

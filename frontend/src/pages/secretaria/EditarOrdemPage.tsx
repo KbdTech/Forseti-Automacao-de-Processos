@@ -249,11 +249,11 @@ export default function EditarOrdemPage() {
       return
     }
 
-    // Formata valor para máscara BRL
-    const formatted = ordem.valor_estimado.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    })
+    // Formata valor para máscara BRL — Number() garante cast correto mesmo se API retornar string
+    const numericValue = Number(ordem.valor_estimado)
+    const formatted = isNaN(numericValue)
+      ? ''
+      : numericValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     setValorInput(formatted)
 
     reset({
@@ -262,7 +262,7 @@ export default function EditarOrdemPage() {
       responsavel: ordem.responsavel ?? '',
       assinatura_govbr: ordem.assinatura_govbr ?? false,
       descricao: ordem.descricao ?? '',
-      valor_estimado: ordem.valor_estimado,
+      valor_estimado: numericValue,
       justificativa: ordem.justificativa,
     })
   }, [ordem, reset, navigate])

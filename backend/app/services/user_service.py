@@ -233,6 +233,49 @@ class UserService:
         await db.refresh(user)
         return UserResponse.model_validate(user)
 
+    async def reset_password(
+        self,
+        db: AsyncSession,
+        user_id: UUID,
+        reset_by: UUID,
+    ) -> UserResponse:
+        """Reseta a senha de um usuário forçando troca no próximo acesso.
+
+        Define first_login=True, login_attempts=0 e locked_until=None.
+        O usuário será redirecionado para PrimeiroAcessoPage no próximo login.
+
+        Args:
+            user_id: UUID do usuário que terá a senha resetada.
+            reset_by: UUID do admin que solicitou o reset.
+
+        Returns:
+            UserResponse atualizado.
+
+        Raises:
+            HTTPException 404: Usuário não encontrado.
+        """
+        result = await db.execute(select(User).where(User.id == user_id))
+        user: User | None = result.scalar_one_or_none()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado.",
+            )
+
+        user.first_login = True
+        user.login_attempts = 0
+        user.locked_until = None
+        user.updated_at = datetime.now(timezone.utc)
+
+        # audit_logs — append-only (US-012 RN-60)
+        log = AuditLog(user_id=reset_by, action="password_reset")
+        db.add(log)
+        await db.flush()
+
+        await db.commit()
+        await db.refresh(user)
+        return UserResponse.model_validate(user)
+
     async def update_role(
         self,
         db: AsyncSession,

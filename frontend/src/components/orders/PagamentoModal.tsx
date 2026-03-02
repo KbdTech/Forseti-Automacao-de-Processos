@@ -20,11 +20,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, AlertTriangle, Loader2, Paperclip, X } from 'lucide-react'
+import { CheckCircle, AlertTriangle, Loader2, Paperclip, X, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -48,7 +49,7 @@ import {
 import { getOrdem, executeAcao } from '@/services/ordensService'
 import { uploadDocumento } from '@/services/documentosService'
 import type { AcaoPayload } from '@/types/ordem'
-import { extractApiError, parseBRL, formatCurrencyInput } from '@/utils/formatters'
+import { extractApiError, parseBRL, formatCurrencyInput, formatCNPJ } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -135,6 +136,7 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
     valorNum > 0 &&
     dataPagamento.length > 0 &&
     formaPagamento !== '' &&
+    comprovante !== null &&
     (!obsRequired || observacao.trim().length > 0)
 
   const mutation = useMutation({
@@ -223,6 +225,52 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Nº Nota Fiscal</span>
                   <span className="font-mono">{ordem.numero_nf}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Card de dados bancários do fornecedor — S12.1 */}
+          {ordem?.fornecedor && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <Badge variant="outline" className="text-xs shrink-0 gap-1">
+                  <Building2 className="h-3 w-3" />
+                  Fornecedor Vinculado
+                </Badge>
+                <div>
+                  <p className="text-sm font-medium leading-tight">{ordem.fornecedor.razao_social}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{formatCNPJ(ordem.fornecedor.cnpj)}</p>
+                </div>
+              </div>
+              {(ordem.fornecedor.banco || ordem.fornecedor.agencia || ordem.fornecedor.conta) && (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t pt-3">
+                  <p className="text-xs font-medium text-muted-foreground col-span-2 uppercase tracking-wide">
+                    Dados Bancários
+                  </p>
+                  {ordem.fornecedor.banco && (
+                    <>
+                      <span className="text-xs text-muted-foreground">Banco</span>
+                      <span className="text-xs">{ordem.fornecedor.banco}</span>
+                    </>
+                  )}
+                  {ordem.fornecedor.agencia && (
+                    <>
+                      <span className="text-xs text-muted-foreground">Agência</span>
+                      <span className="text-xs">{ordem.fornecedor.agencia}</span>
+                    </>
+                  )}
+                  {ordem.fornecedor.conta && (
+                    <>
+                      <span className="text-xs text-muted-foreground">Conta</span>
+                      <span className="text-xs">
+                        {ordem.fornecedor.conta}{' '}
+                        <span className="text-muted-foreground">
+                          ({ordem.fornecedor.tipo_conta === 'poupanca' ? 'Poupança' : 'Corrente'})
+                        </span>
+                      </span>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -318,9 +366,11 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
             />
           </div>
 
-          {/* Comprovante de pagamento — US-020 (opcional, recomendado) */}
+          {/* Comprovante de pagamento — UX-004 (obrigatório) */}
           <div className="space-y-1.5">
-            <Label>Comprovante de Pagamento</Label>
+            <Label>
+              Comprovante de Pagamento <span className="text-destructive">*</span>
+            </Label>
             <div
               className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
               style={mutation.isPending ? { opacity: 0.5, pointerEvents: 'none' } : {}}
@@ -356,9 +406,11 @@ export function PagamentoModal({ orderId, onClose, onSuccess }: PagamentoModalPr
               onChange={(e) => setComprovante(e.target.files?.[0] ?? null)}
               disabled={mutation.isPending}
             />
-            <p className="text-xs text-muted-foreground">
-              Opcional — recomendado para fins de auditoria.
-            </p>
+            {comprovante === null && (
+              <p className="text-xs text-destructive">
+                Anexe o comprovante antes de registrar o pagamento.
+              </p>
+            )}
           </div>
         </div>
 

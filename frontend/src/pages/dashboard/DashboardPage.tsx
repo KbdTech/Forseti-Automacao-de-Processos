@@ -42,6 +42,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,7 +59,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { KPICard, KPICardSkeleton } from '@/components/dashboard/KPICard'
-import { getSummary, getAlertas } from '@/services/dashboardService'
+import { getSummary, getAlertas, getGastosFornecedor } from '@/services/dashboardService'
+import { formatCNPJ } from '@/utils/formatters'
 import { useAuth } from '@/hooks/useAuth'
 import { STATUS_CONFIG } from '@/utils/constants'
 import type { StatusOrdem } from '@/types/ordem'
@@ -154,9 +163,20 @@ export default function DashboardPage() {
     staleTime: 60_000,
   })
 
+  // --- Query: Gastos por Fornecedor (gabinete/admin — S12.3) ---
+  const { data: gastosData, isLoading: gastosLoading, refetch: refetchGastos } = useQuery({
+    queryKey: ['dashboard', 'gastos-fornecedor', dataInicio, dataFim],
+    queryFn: () => getGastosFornecedor({ data_inicio: dataInicio, data_fim: dataFim }),
+    enabled: isGabineteOrAdmin,
+    staleTime: 60_000,
+  })
+
   function handleRefresh() {
     refetchSummary()
-    if (isGabineteOrAdmin) refetchAlertas()
+    if (isGabineteOrAdmin) {
+      refetchAlertas()
+      refetchGastos()
+    }
   }
 
   // --- KPI helpers ---
@@ -552,6 +572,64 @@ export default function DashboardPage() {
             </>
           )}
         </>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Gastos por Fornecedor — somente gabinete/admin (S12.3)             */}
+      {/* ------------------------------------------------------------------ */}
+
+      {isGabineteOrAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Gastos por Fornecedor</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {gastosLoading ? (
+              <Skeleton className="h-40 w-full" />
+            ) : !gastosData?.length ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Nenhum pagamento registrado no período.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fornecedor</TableHead>
+                      <TableHead>CNPJ</TableHead>
+                      <TableHead className="text-right">Total Pago</TableHead>
+                      <TableHead className="text-right">Ordens</TableHead>
+                      <TableHead>Secretaria</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {gastosData.map((item) => (
+                      <TableRow key={item.fornecedor_id}>
+                        <TableCell className="font-medium max-w-[200px]">
+                          <span className="block truncate" title={item.razao_social}>
+                            {item.razao_social}
+                          </span>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm whitespace-nowrap">
+                          {formatCNPJ(item.cnpj)}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          {formatBRL(item.total_pago)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.count_ordens}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {item.secretaria_nome ?? '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Nota de período */}

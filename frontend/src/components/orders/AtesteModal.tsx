@@ -118,10 +118,11 @@ export function AtesteModal({ orderId, onClose, onSuccess }: AtesteModalProps) {
     if (extrasRef.current) extrasRef.current.value = ''
   }
 
-  // US-018: botão habilitado somente quando todos os obrigatórios preenchidos
+  // US-018 + UX-002: botão habilitado somente quando todos os obrigatórios preenchidos
   const isValid =
     numeroNf.trim().length > 0 &&
     arquivoNf !== null &&
+    documentosExtras.length > 0 &&
     confirmado &&
     dldAssinada
 
@@ -256,9 +257,14 @@ export function AtesteModal({ orderId, onClose, onSuccess }: AtesteModalProps) {
             )}
           </div>
 
-          {/* Documentos extras — US-018 (opcional, múltiplos) */}
+          {/* Documentos extras — UX-002 (obrigatório, múltiplos) */}
           <div className="space-y-1.5">
-            <Label>Documentos Extras (opcional)</Label>
+            <Label>Documentos Extras <span className="text-destructive">*</span></Label>
+            {documentosExtras.length === 0 && (
+              <p className="text-xs text-destructive">
+                Anexe ao menos 1 documento extra para continuar.
+              </p>
+            )}
             {documentosExtras.length > 0 && (
               <ul className="space-y-1">
                 {documentosExtras.map((f, i) => (

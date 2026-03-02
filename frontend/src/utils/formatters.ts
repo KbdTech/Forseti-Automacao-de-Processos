@@ -73,3 +73,56 @@ export function formatCurrencyInput(value: number): string {
   if (!value) return ''
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
+
+// ---------------------------------------------------------------------------
+// Secretaria
+// ---------------------------------------------------------------------------
+
+/**
+ * Remove o prefixo "Secretaria Municipal de/do/da/dos/das" para exibição
+ * compacta em tabelas.
+ * Ex.: "Secretaria Municipal de Educação" → "Educação"
+ */
+export function formatNomeSecretaria(nome: string | null | undefined): string {
+  if (!nome) return '—'
+  return nome.replace(/^Secretaria Municipal (de|do|da|dos|das) /i, '')
+}
+
+// ---------------------------------------------------------------------------
+// CNPJ — S11.2
+// ---------------------------------------------------------------------------
+
+/**
+ * Aplica máscara progressiva ao CNPJ durante digitação.
+ * Entrada: qualquer string. Saída: XX.XXX.XXX/XXXX-XX (parcial ou completa).
+ */
+export function formatCNPJ(raw: string): string {
+  const d = raw.replace(/\D/g, '').slice(0, 14)
+  if (d.length <= 2) return d
+  if (d.length <= 5) return `${d.slice(0, 2)}.${d.slice(2)}`
+  if (d.length <= 8) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5)}`
+  if (d.length <= 12) return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8)}`
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`
+}
+
+/** Remove toda formatação do CNPJ, retornando apenas os 14 dígitos. */
+export function parseCNPJ(formatted: string): string {
+  return formatted.replace(/\D/g, '')
+}
+
+// ---------------------------------------------------------------------------
+// Tempo relativo
+// ---------------------------------------------------------------------------
+
+/**
+ * Retorna string legível de tempo decorrido desde uma data.
+ * Ex.: "há 30 seg", "há 2 min", "há 1 h"
+ */
+export function formatRelativeTime(date: Date): string {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return `há ${seconds} seg`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `há ${minutes} min`
+  const hours = Math.floor(minutes / 60)
+  return `há ${hours} h`
+}

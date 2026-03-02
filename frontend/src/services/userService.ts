@@ -76,6 +76,19 @@ export async function updateUser(
 }
 
 /**
+ * PUT /api/users/:id/reset-password
+ *
+ * US-025: reseta a senha de um usuário (first_login=True).
+ * O usuário precisará criar nova senha no próximo login.
+ */
+export async function resetUserPassword(userId: string): Promise<UserResponse> {
+  const { data } = await apiClient.put<UserResponse>(
+    `/api/users/${userId}/reset-password`,
+  )
+  return data
+}
+
+/**
  * PUT /api/users/:id/role
  *
  * US-002 RN-9: admin não pode remover seu próprio perfil de administrador.

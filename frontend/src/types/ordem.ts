@@ -36,6 +36,26 @@ export type StatusOrdem =
   | 'PAGA'
 
 // ---------------------------------------------------------------------------
+// Entidades auxiliares
+// ---------------------------------------------------------------------------
+
+/**
+ * Dados básicos do fornecedor vinculado a uma ordem — S11.1/S11.3.
+ * Nullable no response para compatibilidade com ordens históricas sem fornecedor.
+ */
+export interface FornecedorBasico {
+  id: string
+  razao_social: string
+  cnpj: string
+  numero_processo: string | null
+  valor_contratado: number | null
+  banco: string | null
+  agencia: string | null
+  conta: string | null
+  tipo_conta: string
+}
+
+// ---------------------------------------------------------------------------
 // Entidades
 // ---------------------------------------------------------------------------
 
@@ -89,6 +109,9 @@ export interface Ordem {
   data_pagamento: string | null
   forma_pagamento: 'transferencia' | 'cheque' | 'pix' | null
 
+  /** S11.1/S11.3: fornecedor vencedor da licitação (null em ordens históricas sem vínculo). */
+  fornecedor?: FornecedorBasico | null
+
   created_at: string
   updated_at: string
 }
@@ -129,6 +152,8 @@ export interface OrdemCreatePayload {
   justificativa: string
   /** US-016: indica se a OS foi assinada via GovBR. Default: false. */
   assinatura_govbr?: boolean
+  /** S11.1/S11.3: obrigatório em todas as novas ordens. */
+  fornecedor_id: string
 }
 
 /**
@@ -178,4 +203,10 @@ export interface OrdensFilters {
   status?: StatusOrdem
   protocolo?: string
   secretaria_id?: string
+  /** US-024: filtrar por prioridade (NORMAL, ALTA, URGENTE) */
+  prioridade?: Prioridade
+  /** US-024: filtrar por data de criação — início (YYYY-MM-DD) */
+  data_inicio?: string
+  /** US-024: filtrar por data de criação — fim (YYYY-MM-DD) */
+  data_fim?: string
 }

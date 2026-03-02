@@ -4,16 +4,23 @@
  * US-019: após a contabilidade registrar a liquidação, as ordens aguardam
  * a assinatura do secretário responsável antes de ir à tesouraria.
  *
+ * US-022: reformulação UX — o modal de assinatura agora exibe:
+ *   - Lista de documentos da ordem (somente-leitura)
+ *   - Campo de upload do documento assinado (obrigatório, descricao='ASSINATURA_LIQUIDACAO')
+ *   - Checkbox de confirmação (obrigatório)
+ *   Botão habilitado apenas quando ambos estão preenchidos.
+ *   Upload é feito antes de executeAcao('assinar_liquidacao').
+ *
  * Features:
  *   - Lista ordens em AGUARDANDO_ASSINATURA_SECRETARIA (filtradas no back-end
  *     pela secretaria do usuário autenticado — US-019 / US-004 RN-21)
  *   - Filtro por protocolo com debounce 300ms
- *   - Clicar na linha abre OrderDetailModal (somente-leitura para docs — US-019 Cenário 4)
- *   - Botão "Assinar e Aprovar" → modal de confirmação → PATCH { acao: 'assinar_liquidacao' }
+ *   - Clicar na linha abre OrderDetailModal (somente-leitura para docs)
+ *   - Botão "Assinar" → modal expandido → PATCH { acao: 'assinar_liquidacao' }
  *   - Status paginado: 20 itens por página
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -22,15 +29,18 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Paperclip,
   PenLine,
   RefreshCw,
   Search,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -51,8 +61,10 @@ import {
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 
+import { DocumentList } from '@/components/ordens/DocumentList'
 import { OrderDetailModal } from '@/components/orders/OrderDetailModal'
 import { listOrdens, executeAcao } from '@/services/ordensService'
+import { uploadDocumento } from '@/services/documentosService'
 import { extractApiError } from '@/utils/formatters'
 import {
   TIPO_ORDEM_LABELS,
@@ -118,21 +130,74 @@ function TableSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
-// Modal de confirmação de assinatura
+// Modal expandido de assinatura — US-022
 // ---------------------------------------------------------------------------
 
 interface AssinaturaConfirmModalProps {
   ordem: Ordem | null
   onClose: () => void
-  onConfirm: () => void
-  isPending: boolean
+  onSuccess: () => void
 }
 
-function AssinaturaConfirmModal({ ordem, onClose, onConfirm, isPending }: AssinaturaConfirmModalProps) {
+function AssinaturaConfirmModal({ ordem, onClose, onSuccess }: AssinaturaConfirmModalProps) {
+  const queryClient = useQueryClient()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [documentoAssinado, setDocumentoAssinado] = useState<File | null>(null)
+  const [confirmacaoLida, setConfirmacaoLida] = useState(false)
+
+  const podeConfirmar = documentoAssinado !== null && confirmacaoLida
+
+  function handleClose() {
+    setDocumentoAssinado(null)
+    setConfirmacaoLida(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    onClose()
+  }
+
+  // Resetar ao abrir com nova ordem
+  useEffect(() => {
+    if (ordem) {
+      setDocumentoAssinado(null)
+      setConfirmacaoLida(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }, [ordem?.id])
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!ordem) return
+      // US-022 passo 1 — upload do documento assinado
+      if (documentoAssinado) {
+        await uploadDocumento(ordem.id, {
+          file: documentoAssinado,
+          descricao: 'ASSINATURA_LIQUIDACAO',
+        })
+      }
+      // Passo 2 — executar a transição de status
+      return executeAcao(ordem.id, { acao: 'assinar_liquidacao' })
+    },
+    onSuccess: () => {
+      if (!ordem) return
+      toast.success('Liquidação assinada', {
+        description: 'Ordem encaminhada para pagamento.',
+      })
+      queryClient.invalidateQueries({ queryKey: ['ordens-assinatura'] })
+      queryClient.invalidateQueries({ queryKey: ['ordens'] })
+      queryClient.invalidateQueries({ queryKey: ['ordem', ordem.id] })
+      handleClose()
+      onSuccess()
+    },
+    onError: (error: AxiosError<{ detail: unknown }>) => {
+      const msg = extractApiError(error.response?.data?.detail, 'Tente novamente.')
+      toast.error('Erro ao assinar liquidação', { description: msg })
+    },
+  })
+
   return (
-    <Dialog open={ordem !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
-        {isPending && (
+    <Dialog open={ordem !== null} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="max-w-lg">
+        {mutation.isPending && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-lg bg-background/80 backdrop-blur-sm">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm font-medium text-muted-foreground">Processando...</p>
@@ -141,12 +206,12 @@ function AssinaturaConfirmModal({ ordem, onClose, onConfirm, isPending }: Assina
         <DialogHeader>
           <DialogTitle>Assinar e Aprovar Liquidação</DialogTitle>
           <DialogDescription>
-            Confirme a assinatura do documento de liquidação. Após a confirmação,
-            a ordem seguirá para a Tesouraria para pagamento.
+            Revise os documentos, anexe o documento assinado e confirme sua aprovação.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-y-auto">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+          {/* Resumo da ordem */}
           {ordem && (
             <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
               <div className="flex justify-between">
@@ -171,14 +236,92 @@ function AssinaturaConfirmModal({ ordem, onClose, onConfirm, isPending }: Assina
               )}
             </div>
           )}
+
+          {/* Documentos da ordem — somente-leitura */}
+          {ordem && (
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium">Documentos da Ordem</p>
+              <DocumentList ordemId={ordem.id} readOnly />
+            </div>
+          )}
+
+          {/* Upload do documento assinado — US-022 (obrigatório) */}
+          <div className="space-y-1.5">
+            <Label>
+              Documento Assinado <span className="text-destructive">*</span>
+            </Label>
+            <div
+              className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              style={mutation.isPending ? { opacity: 0.5, pointerEvents: 'none' } : {}}
+              onClick={() => !documentoAssinado && fileInputRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className={documentoAssinado ? 'text-foreground flex-1 truncate' : 'text-muted-foreground flex-1'}>
+                {documentoAssinado
+                  ? documentoAssinado.name
+                  : 'Clique para selecionar (PDF, JPEG, PNG — máx 10 MB)'}
+              </span>
+              {documentoAssinado && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setDocumentoAssinado(null)
+                    if (fileInputRef.current) fileInputRef.current.value = ''
+                  }}
+                  disabled={mutation.isPending}
+                  className="text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Remover documento assinado"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              className="hidden"
+              onChange={(e) => setDocumentoAssinado(e.target.files?.[0] ?? null)}
+              disabled={mutation.isPending}
+            />
+            {!documentoAssinado && (
+              <p className="text-xs text-destructive">
+                Anexe o documento assinado para continuar.
+              </p>
+            )}
+          </div>
+
+          {/* Checkbox de confirmação */}
+          <div className="flex items-start gap-3 rounded-md border p-3">
+            <input
+              id="confirmacao-assinatura"
+              type="checkbox"
+              checked={confirmacaoLida}
+              onChange={(e) => setConfirmacaoLida(e.target.checked)}
+              disabled={mutation.isPending}
+              className="mt-0.5 h-4 w-4 accent-primary cursor-pointer"
+            />
+            <Label
+              htmlFor="confirmacao-assinatura"
+              className="text-sm leading-snug cursor-pointer font-normal"
+            >
+              Confirmo que li e assinei o documento de liquidação e autorizo o
+              encaminhamento da ordem para pagamento.
+            </Label>
+          </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
+          <Button variant="outline" onClick={handleClose} disabled={mutation.isPending}>
             Cancelar
           </Button>
-          <Button onClick={onConfirm} disabled={isPending} className="gap-1.5">
-            {isPending ? (
+          <Button
+            onClick={() => mutation.mutate()}
+            disabled={!podeConfirmar || mutation.isPending}
+            className="gap-1.5"
+          >
+            {mutation.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <CheckCircle className="h-4 w-4" />
@@ -196,8 +339,6 @@ function AssinaturaConfirmModal({ ordem, onClose, onConfirm, isPending }: Assina
 // ---------------------------------------------------------------------------
 
 export default function AssinaturaLiquidacaoPage() {
-  const queryClient = useQueryClient()
-
   const [protocolo, setProtocolo] = useState('')
   const [page, setPage] = useState(1)
   const [detailId, setDetailId] = useState<string | null>(null)
@@ -216,24 +357,6 @@ export default function AssinaturaLiquidacaoPage() {
         protocolo: debouncedProtocolo || undefined,
       }),
     staleTime: 1000 * 30,
-  })
-
-  const mutation = useMutation({
-    mutationFn: (orderId: string) =>
-      executeAcao(orderId, { acao: 'assinar_liquidacao' }),
-    onSuccess: (_, orderId) => {
-      toast.success('Liquidação assinada', {
-        description: 'Ordem encaminhada para pagamento.',
-      })
-      queryClient.invalidateQueries({ queryKey: ['ordens-assinatura'] })
-      queryClient.invalidateQueries({ queryKey: ['ordens'] })
-      queryClient.invalidateQueries({ queryKey: ['ordem', orderId] })
-      setAssinaturaOrdem(null)
-    },
-    onError: (error: AxiosError<{ detail: unknown }>) => {
-      const msg = extractApiError(error.response?.data?.detail, 'Tente novamente.')
-      toast.error('Erro ao assinar liquidação', { description: msg })
-    },
   })
 
   const totalPages = data?.pages ?? 1
@@ -404,19 +527,18 @@ export default function AssinaturaLiquidacaoPage() {
         </div>
       )}
 
-      {/* Modal de detalhe — US-019 Cenário 4: somente-leitura (sem upload de documentos) */}
+      {/* Modal de detalhe — somente-leitura para docs */}
       <OrderDetailModal
         orderId={detailId}
         onClose={() => setDetailId(null)}
         readOnly
       />
 
-      {/* Modal de confirmação de assinatura */}
+      {/* Modal expandido de assinatura — US-022 */}
       <AssinaturaConfirmModal
         ordem={assinaturaOrdem}
         onClose={() => setAssinaturaOrdem(null)}
-        onConfirm={() => assinaturaOrdem && mutation.mutate(assinaturaOrdem.id)}
-        isPending={mutation.isPending}
+        onSuccess={() => setAssinaturaOrdem(null)}
       />
     </div>
   )

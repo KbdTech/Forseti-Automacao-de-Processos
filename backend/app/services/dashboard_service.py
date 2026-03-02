@@ -25,6 +25,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.enums import StatusOrdemEnum
+from app.models.fornecedor import Fornecedor
 from app.models.ordem import Ordem
 from app.models.ordem_historico import OrdemHistorico
 from app.models.secretaria import Secretaria
@@ -401,6 +402,72 @@ class DashboardService:
             "gargalos": gargalos,
             "secretarias_atencao": secretarias_atencao,
         }
+
+
+    async def get_gastos_fornecedor(
+        self,
+        db: AsyncSession,
+        data_inicio: date,
+        data_fim: date,
+        scoped_secretaria_id: uuid.UUID | None = None,
+        filtro_secretaria_id: uuid.UUID | None = None,
+    ) -> list[dict[str, Any]]:
+        """Gastos consolidados por fornecedor em ordens PAGAS no período.
+
+        S12.3:
+          - Apenas ordens com status PAGA são contabilizadas (via valor_pago).
+          - scoped_secretaria_id: forçado quando user.role == secretaria.
+          - filtro_secretaria_id: filtro opcional para perfis globais.
+          - Ordenado por total_pago DESC.
+        """
+        dt_inicio = _dt_inicio(data_inicio)
+        dt_fim = _dt_fim(data_fim)
+
+        stmt = (
+            select(
+                Ordem.fornecedor_id,
+                Fornecedor.razao_social,
+                Fornecedor.cnpj,
+                func.sum(Ordem.valor_pago).label("total_pago"),
+                func.count(Ordem.id).label("count_ordens"),
+                Secretaria.nome.label("secretaria_nome"),
+            )
+            .join(Fornecedor, Ordem.fornecedor_id == Fornecedor.id)
+            .join(Secretaria, Ordem.secretaria_id == Secretaria.id, isouter=True)
+            .where(Ordem.status == StatusOrdemEnum.PAGA)
+            .where(Ordem.fornecedor_id.is_not(None))
+            .where(Ordem.updated_at >= dt_inicio)
+            .where(Ordem.updated_at <= dt_fim)
+        )
+
+        if scoped_secretaria_id is not None:
+            stmt = stmt.where(Ordem.secretaria_id == scoped_secretaria_id)
+        elif filtro_secretaria_id is not None:
+            stmt = stmt.where(Ordem.secretaria_id == filtro_secretaria_id)
+
+        stmt = (
+            stmt
+            .group_by(
+                Ordem.fornecedor_id,
+                Fornecedor.razao_social,
+                Fornecedor.cnpj,
+                Secretaria.nome,
+            )
+            .order_by(func.sum(Ordem.valor_pago).desc())
+        )
+
+        result = await db.execute(stmt)
+        return [
+            {
+                "fornecedor_id": row.fornecedor_id,
+                "razao_social": row.razao_social,
+                "cnpj": row.cnpj,
+                "total_pago": row.total_pago or Decimal("0"),
+                "count_ordens": row.count_ordens,
+                "secretaria_nome": row.secretaria_nome,
+            }
+            for row in result.all()
+        ]
 
 
 # Singleton — instância única para uso nos routers

@@ -238,7 +238,7 @@ export default function DevolvidasPage() {
 
                     {/* Valor */}
                     <TableCell className="text-sm text-right whitespace-nowrap">
-                      {ordem.valor_estimado.toLocaleString('pt-BR', {
+                      {Number(ordem.valor_estimado).toLocaleString('pt-BR', {
                         style: 'currency',
                         currency: 'BRL',
                       })}

@@ -14,6 +14,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   Archive,
+  BarChart2,
   Banknote,
   Building2,
   CheckSquare,
@@ -27,6 +28,7 @@ import {
   RotateCcw,
   ScrollText,
   ShieldCheck,
+  Store,
   Users,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -57,6 +59,8 @@ const ICON_MAP: Record<SidebarIconKey, LucideIcon> = {
   Users,
   Landmark,
   PenLine,
+  Store,
+  BarChart2,
 }
 
 // ---------------------------------------------------------------------------

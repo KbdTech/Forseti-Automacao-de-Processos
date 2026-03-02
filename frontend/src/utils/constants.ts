@@ -161,3 +161,6 @@ export const DEFAULT_PAGE_SIZE = 20
 
 /** US-004: debounce em buscas/filtros (ms). */
 export const DEBOUNCE_DELAY_MS = 300
+
+/** US-023: intervalo de auto-refresh do Pipeline de Pagamento (ms). */
+export const POLLING_INTERVAL_MS = 30_000

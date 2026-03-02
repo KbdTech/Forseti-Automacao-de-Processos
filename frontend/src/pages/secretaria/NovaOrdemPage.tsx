@@ -15,7 +15,7 @@
  * US-003 RN-20: status inicial = AGUARDANDO_GABINETE (back-end).
  */
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -73,14 +73,29 @@ import { useAuthStore } from '@/stores/authStore'
 import { createOrdem } from '@/services/ordensService'
 import { uploadDocumento } from '@/services/documentosService'
 import { listSecretarias } from '@/services/secretariasService'
+import { listFornecedores } from '@/services/fornecedoresService'
 import {
   TIPO_ORDEM_LABELS,
   PRIORIDADE_LABELS,
   PRIORIDADE_CONFIG,
   JUSTIFICATIVA_MIN_LENGTH,
 } from '@/utils/constants'
-import { extractApiError } from '@/utils/formatters'
+import { extractApiError, formatCNPJ } from '@/utils/formatters'
 import type { TipoOrdem, Prioridade, Ordem } from '@/types/ordem'
+import type { FornecedorResponse } from '@/types/fornecedor'
+
+// ---------------------------------------------------------------------------
+// Hook de debounce — padrão interno (300ms)
+// ---------------------------------------------------------------------------
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(id)
+  }, [value, delay])
+  return debounced
+}
 
 // ---------------------------------------------------------------------------
 // Schemas de validação — por etapa
@@ -306,11 +321,23 @@ export default function NovaOrdemPage() {
   const [pendingDragOver, setPendingDragOver] = useState(false)
   const pendingFileInputRef = useRef<HTMLInputElement>(null)
 
+  // S11.3 — Fornecedor obrigatório
+  const [fornecedorSelecionado, setFornecedorSelecionado] = useState<FornecedorResponse | null>(null)
+  const [fornecedorSearch, setFornecedorSearch] = useState('')
+  const debouncedFornecedorSearch = useDebounce(fornecedorSearch, 300)
+
   // Busca secretarias para exibir o nome da secretaria do usuário
   const { data: secretarias } = useQuery({
     queryKey: ['secretarias'],
     queryFn: listSecretarias,
     staleTime: 1000 * 60 * 5,
+  })
+
+  // S11.3 — Carrega fornecedores ativos filtrados por busca (is_active=true)
+  const { data: fornecedoresData, isLoading: isFornecedoresLoading } = useQuery({
+    queryKey: ['fornecedores-select', debouncedFornecedorSearch],
+    queryFn: () => listFornecedores({ q: debouncedFornecedorSearch || undefined, is_active: true }),
+    staleTime: 1000 * 60,
   })
 
   const secretariaNome =
@@ -347,6 +374,8 @@ export default function NovaOrdemPage() {
         valor_estimado: data.valor_estimado,
         justificativa: data.justificativa,
         assinatura_govbr: data.assinatura_govbr ?? false,
+        // S11.3: fornecedor obrigatório — guard garante que não é null
+        fornecedor_id: fornecedorSelecionado!.id,
       })
       // US-015: upload de arquivos selecionados durante o preenchimento
       if (pendingFiles.length > 0) {
@@ -400,6 +429,8 @@ export default function NovaOrdemPage() {
     setStep(1)
     setValorInput('')
     setPendingFiles([])
+    setFornecedorSelecionado(null)
+    setFornecedorSearch('')
   }
 
   function addPendingFile(file: File) {
@@ -517,6 +548,64 @@ export default function NovaOrdemPage() {
                 <p className="text-xs text-muted-foreground">
                   Vinculada automaticamente ao seu perfil.
                 </p>
+              </div>
+
+              {/* Fornecedor — S11.3: obrigatório em todas as ordens */}
+              <div className="space-y-1.5">
+                <Label htmlFor="forn-search">
+                  Fornecedor <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="forn-search"
+                  placeholder="Buscar por nome ou CNPJ…"
+                  value={fornecedorSearch}
+                  onChange={(e) => setFornecedorSearch(e.target.value)}
+                  className="h-9 text-sm"
+                />
+                <Select
+                  value={fornecedorSelecionado?.id ?? ''}
+                  onValueChange={(id) => {
+                    const f = fornecedoresData?.items.find((item) => item.id === id) ?? null
+                    setFornecedorSelecionado(f)
+                  }}
+                >
+                  <SelectTrigger
+                    className={!fornecedorSelecionado ? 'border-muted-foreground/40' : ''}
+                  >
+                    <SelectValue placeholder="Selecionar fornecedor da licitação…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isFornecedoresLoading && (
+                      <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                        Carregando fornecedores…
+                      </div>
+                    )}
+                    {!isFornecedoresLoading && !fornecedoresData?.items.length && (
+                      <div className="px-2 py-3 text-xs text-muted-foreground text-center">
+                        Nenhum fornecedor disponível.
+                      </div>
+                    )}
+                    {fornecedoresData?.items.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        <span className="font-medium">{f.razao_social}</span>
+                        <span className="ml-2 text-xs text-muted-foreground font-mono">
+                          {formatCNPJ(f.cnpj)}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!fornecedoresData?.items.length && !isFornecedoresLoading && (
+                  <p className="text-xs text-muted-foreground">
+                    Solicite ao administrador o cadastro do fornecedor antes de criar a ordem.
+                  </p>
+                )}
+                {fornecedorSelecionado && (
+                  <p className="text-xs text-muted-foreground">
+                    Selecionado: <span className="font-medium">{fornecedorSelecionado.razao_social}</span>
+                    {' '}— {formatCNPJ(fornecedorSelecionado.cnpj)}
+                  </p>
+                )}
               </div>
 
               {/* Tipo de Ordem */}
@@ -674,9 +763,9 @@ export default function NovaOrdemPage() {
 
               {/* Documentos de suporte — US-015 */}
               <div className="space-y-2">
-                <Label>Documentos de suporte <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                <Label>Documentos de suporte <span className="text-destructive">*</span></Label>
                 <p className="text-xs text-muted-foreground">
-                  PDF, JPEG ou PNG — máx 10 MB por arquivo. Serão anexados automaticamente ao criar a ordem.
+                  Obrigatório: ao menos 1 documento antes de criar a ordem. PDF, JPEG ou PNG — máx 10 MB por arquivo.
                 </p>
                 {/* Zona de drop */}
                 <div
@@ -708,6 +797,12 @@ export default function NovaOrdemPage() {
                   className="hidden"
                   onChange={handlePendingFileInput}
                 />
+                {/* Mensagem de orientação quando sem documentos */}
+                {pendingFiles.length === 0 && (
+                  <p className="text-xs text-destructive">
+                    Anexe ao menos 1 documento para continuar.
+                  </p>
+                )}
                 {/* Lista de arquivos selecionados */}
                 {pendingFiles.length > 0 && (
                   <div className="space-y-1.5">
@@ -784,6 +879,12 @@ export default function NovaOrdemPage() {
 
               <div className="rounded-lg border bg-muted/20 px-4 py-2 divide-y">
                 <ReviewRow label="Secretaria" value={secretariaNome} />
+                {fornecedorSelecionado && (
+                  <ReviewRow
+                    label="Fornecedor"
+                    value={`${fornecedorSelecionado.razao_social} — ${formatCNPJ(fornecedorSelecionado.cnpj)}`}
+                  />
+                )}
                 <ReviewRow
                   label="Tipo"
                   value={TIPO_ORDEM_LABELS[values.tipo as TipoOrdem] ?? '—'}
@@ -872,12 +973,21 @@ export default function NovaOrdemPage() {
         </Button>
 
         {step < 3 ? (
-          <Button onClick={handleNext} className="gap-1">
+          <Button
+            onClick={handleNext}
+            className="gap-1"
+            // S11.3: impede avançar da etapa 1 sem selecionar fornecedor
+            disabled={step === 1 && !fornecedorSelecionado}
+          >
             Próximo
             <ChevronRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={() => setConfirmOpen(true)} className="gap-1">
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            disabled={pendingFiles.length === 0 || !fornecedorSelecionado}
+            className="gap-1"
+          >
             Enviar ao Gabinete
             <ChevronRight className="h-4 w-4" />
           </Button>

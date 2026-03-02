@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { FileText, Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { FileText, Search, ChevronLeft, ChevronRight, RefreshCw, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +52,9 @@ import {
   DEBOUNCE_DELAY_MS,
 } from '@/utils/constants'
 import type { StatusOrdem, TipoOrdem, Prioridade } from '@/types/ordem'
+
+// Prioridades disponíveis para o filtro — US-024
+const PRIORIDADES: Prioridade[] = ['normal', 'alta', 'urgente']
 
 // ---------------------------------------------------------------------------
 // Hook de debounce — US-004 CLAUDE.md regra 12 (300ms)
@@ -117,6 +120,9 @@ export default function MinhasOrdensPage() {
   // Filtros
   const [protocolo, setProtocolo] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusOrdem | 'TODOS'>('TODOS')
+  const [prioridadeFilter, setPrioridadeFilter] = useState<Prioridade | 'TODAS'>('TODAS')
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -125,18 +131,35 @@ export default function MinhasOrdensPage() {
 
   // Query — chaves incluem filtros para refetch automático
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['ordens', page, debouncedProtocolo, statusFilter],
+    queryKey: ['ordens', page, debouncedProtocolo, statusFilter, prioridadeFilter, dataInicio, dataFim],
     queryFn: () =>
       listOrdens({
         page,
         limit: DEFAULT_PAGE_SIZE,
         protocolo: debouncedProtocolo || undefined,
         status: statusFilter !== 'TODOS' ? statusFilter : undefined,
+        prioridade: prioridadeFilter !== 'TODAS' ? prioridadeFilter : undefined,
+        data_inicio: dataInicio || undefined,
+        data_fim: dataFim || undefined,
       }),
     staleTime: 1000 * 30,
   })
 
-  const hasActiveFilters = !!debouncedProtocolo || statusFilter !== 'TODOS'
+  const hasActiveFilters =
+    !!debouncedProtocolo ||
+    statusFilter !== 'TODOS' ||
+    prioridadeFilter !== 'TODAS' ||
+    !!dataInicio ||
+    !!dataFim
+
+  function handleLimparFiltros() {
+    setProtocolo('')
+    setStatusFilter('TODOS')
+    setPrioridadeFilter('TODAS')
+    setDataInicio('')
+    setDataFim('')
+    setPage(1)
+  }
 
   function handleProtocoloChange(e: React.ChangeEvent<HTMLInputElement>) {
     setProtocolo(e.target.value)
@@ -167,30 +190,91 @@ export default function MinhasOrdensPage() {
         </Button>
       </div>
 
-      {/* Barra de filtros */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por protocolo..."
-            value={protocolo}
-            onChange={handleProtocoloChange}
-            className="pl-8"
-          />
+      {/* Barra de filtros — US-024 */}
+      <div className="flex flex-col gap-3 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Busca por protocolo */}
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por protocolo..."
+              value={protocolo}
+              onChange={handleProtocoloChange}
+              className="pl-8"
+            />
+          </div>
+
+          {/* Filtro por status */}
+          <Select value={statusFilter} onValueChange={handleStatusChange}>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue placeholder="Filtrar por status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TODOS">Todos os status</SelectItem>
+              {(Object.keys(STATUS_CONFIG) as StatusOrdem[]).map((s) => (
+                <SelectItem key={s} value={s}>
+                  {STATUS_CONFIG[s].label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Filtro por prioridade — US-024 */}
+          <Select
+            value={prioridadeFilter}
+            onValueChange={(v) => { setPrioridadeFilter(v as Prioridade | 'TODAS'); setPage(1) }}
+          >
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Prioridade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TODAS">Todas as prioridades</SelectItem>
+              {PRIORIDADES.map((p) => (
+                <SelectItem key={p} value={p}>
+                  {PRIORIDADE_LABELS[p]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Filtrar por status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="TODOS">Todos os status</SelectItem>
-            {(Object.keys(STATUS_CONFIG) as StatusOrdem[]).map((s) => (
-              <SelectItem key={s} value={s}>
-                {STATUS_CONFIG[s].label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+
+        {/* Filtros de período + botão limpar — US-024 */}
+        <div className="flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex gap-3 flex-1">
+            <div className="space-y-1 flex-1">
+              <label className="text-xs text-muted-foreground">De</label>
+              <Input
+                type="date"
+                value={dataInicio}
+                onChange={(e) => { setDataInicio(e.target.value); setPage(1) }}
+                max={dataFim || undefined}
+                className="h-9"
+              />
+            </div>
+            <div className="space-y-1 flex-1">
+              <label className="text-xs text-muted-foreground">Até</label>
+              <Input
+                type="date"
+                value={dataFim}
+                onChange={(e) => { setDataFim(e.target.value); setPage(1) }}
+                min={dataInicio || undefined}
+                className="h-9"
+              />
+            </div>
+          </div>
+
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLimparFiltros}
+              className="gap-1.5 text-muted-foreground h-9"
+            >
+              <X className="h-3.5 w-3.5" />
+              Limpar filtros
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Estado de erro */}
@@ -208,16 +292,16 @@ export default function MinhasOrdensPage() {
 
       {/* Tabela */}
       <div className="rounded-lg border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead className="font-semibold">Protocolo</TableHead>
-              <TableHead className="font-semibold">Tipo</TableHead>
+              <TableHead className="font-semibold w-[150px]">Protocolo</TableHead>
+              <TableHead className="font-semibold w-[80px]">Tipo</TableHead>
               <TableHead className="font-semibold">Descrição</TableHead>
-              <TableHead className="font-semibold text-right">Valor Est.</TableHead>
-              <TableHead className="font-semibold">Prioridade</TableHead>
-              <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Criado em</TableHead>
+              <TableHead className="font-semibold text-right w-[120px] min-w-[120px]">Valor Est.</TableHead>
+              <TableHead className="font-semibold w-[90px]">Prioridade</TableHead>
+              <TableHead className="font-semibold w-[180px]">Status</TableHead>
+              <TableHead className="font-semibold w-[100px]">Criado em</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -267,12 +351,14 @@ export default function MinhasOrdensPage() {
 
                   {/* Descrição truncada */}
                   <TableCell className="text-sm text-muted-foreground max-w-[200px]">
-                    {truncate(ordem.descricao, 60)}
+                    <span className="block truncate" title={ordem.descricao ?? undefined}>
+                      {ordem.descricao}
+                    </span>
                   </TableCell>
 
                   {/* Valor */}
                   <TableCell className="text-sm text-right whitespace-nowrap">
-                    {ordem.valor_estimado.toLocaleString('pt-BR', {
+                    {Number(ordem.valor_estimado).toLocaleString('pt-BR', {
                       style: 'currency',
                       currency: 'BRL',
                     })}

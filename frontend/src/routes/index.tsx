@@ -11,6 +11,7 @@
  *   / (AppLayout)
  *     /admin/usuarios         → UserManagementPage         [admin]
  *     /admin/secretarias      → SecretariaManagementPage   [admin]
+ *     /admin/fornecedores     → FornecedoresAdminPage      [admin]
  *     /gabinete               → AnaliseGabinetePage        [gabinete, admin]
  *     /controladoria          → AnaliseControladoriaPage   [controladoria, admin]
  *     /contabilidade/empenho  → EmpenhoPage                [contabilidade, admin]
@@ -38,6 +39,8 @@ import AccessDeniedPage from '@/pages/auth/AccessDeniedPage'
 import DashboardExecutivoPage from '@/pages/dashboard/DashboardPage'
 import UserManagementPage from '@/pages/admin/UserManagementPage'
 import SecretariaManagementPage from '@/pages/admin/SecretariaManagementPage'
+import FornecedoresAdminPage from '@/pages/admin/FornecedoresAdminPage'
+import FornecedoresPage from '@/pages/FornecedoresPage'
 import AuditPage from '@/pages/admin/AuditPage'
 import NovaOrdemPage from '@/pages/secretaria/NovaOrdemPage'
 import MinhasOrdensPage from '@/pages/secretaria/MinhasOrdensPage'
@@ -54,6 +57,7 @@ import OrdensPagasPage from '@/pages/tesouraria/OrdensPagasPage'
 import AppLayout from '@/components/layout/AppLayout'
 import RoleGuard from '@/components/layout/RoleGuard'
 import NotificationPreferencesPage from '@/pages/settings/NotificationPreferencesPage'
+import GastosFornecedorPage from '@/pages/relatorio/GastosFornecedorPage'
 
 // ---------------------------------------------------------------------------
 // Wrapper helper para reduzir repetição de RoleGuard nas rotas filhas
@@ -100,6 +104,26 @@ export const router = createBrowserRouter([
       // Redirect raiz → /login (para forçar autenticação via RoleGuard)
       { index: true, element: <Navigate to="/login" replace /> },
 
+      // --- Fornecedores read-only — todos os perfis autenticados (S12.2) ---
+      {
+        path: 'fornecedores',
+        element: (
+          <Guard roles={['secretaria', 'gabinete', 'controladoria', 'contabilidade', 'tesouraria', 'admin']}>
+            <FornecedoresPage />
+          </Guard>
+        ),
+      },
+
+      // --- Relatório de gastos por fornecedor (S12.3) ---
+      {
+        path: 'relatorio/gastos-fornecedor',
+        element: (
+          <Guard roles={['controladoria', 'contabilidade', 'tesouraria', 'secretaria', 'gabinete', 'admin']}>
+            <GastosFornecedorPage />
+          </Guard>
+        ),
+      },
+
       // --- Admin ---
       {
         path: 'admin/usuarios',
@@ -114,6 +138,14 @@ export const router = createBrowserRouter([
         element: (
           <Guard roles={['admin']}>
             <SecretariaManagementPage />
+          </Guard>
+        ),
+      },
+      {
+        path: 'admin/fornecedores',
+        element: (
+          <Guard roles={['admin']}>
+            <FornecedoresAdminPage />
           </Guard>
         ),
       },

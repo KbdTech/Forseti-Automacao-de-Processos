@@ -43,6 +43,9 @@ export async function listOrdens(filters: OrdensFilters = {}): Promise<OrdemList
   if (filters.status) params.status = filters.status
   if (filters.protocolo) params.protocolo = filters.protocolo
   if (filters.secretaria_id) params.secretaria_id = filters.secretaria_id
+  if (filters.prioridade) params.prioridade = filters.prioridade
+  if (filters.data_inicio) params.data_inicio = filters.data_inicio
+  if (filters.data_fim) params.data_fim = filters.data_fim
 
   const { data } = await apiClient.get<OrdemListResponse>('/api/ordens/', { params })
   return data

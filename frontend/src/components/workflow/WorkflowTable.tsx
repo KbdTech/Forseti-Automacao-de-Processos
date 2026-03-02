@@ -65,6 +65,7 @@ import {
   DEFAULT_PAGE_SIZE,
   DEBOUNCE_DELAY_MS,
 } from '@/utils/constants'
+import { formatNomeSecretaria } from '@/utils/formatters'
 import type { Ordem, StatusOrdem, TipoOrdem, Prioridade } from '@/types/ordem'
 
 // ---------------------------------------------------------------------------
@@ -167,6 +168,14 @@ interface WorkflowTableProps {
   rowClassName?: (ordem: Ordem) => string
   /** Filtro client-side: exibe somente ordens com ≥ N dias na etapa. */
   minDaysFilter?: number
+  /** US-023: intervalo de auto-refresh em ms. Undefined = desabilitado. */
+  autoRefreshMs?: number
+  /** US-023: callback invocado após cada refresh (auto ou manual) com o timestamp. */
+  onRefresh?: (timestamp: Date) => void
+  /** US-023: quando true, pausa o polling (ex.: modal aberto). */
+  pausePolling?: boolean
+  /** US-023: exibe botão de refresh manual na barra de filtros. */
+  showRefreshButton?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -180,6 +189,10 @@ export function WorkflowTable({
   renderActions,
   rowClassName,
   minDaysFilter,
+  autoRefreshMs,
+  onRefresh,
+  pausePolling,
+  showRefreshButton,
 }: WorkflowTableProps) {
   const [protocolo, setProtocolo] = useState('')
   const [secretariaId, setSecretariaId] = useState<string>('TODAS')
@@ -216,6 +229,16 @@ export function WorkflowTable({
     queryFn: listSecretarias,
     staleTime: 1000 * 60 * 5, // secretarias mudam raramente
   })
+
+  // US-023: auto-refresh periódico (pausa quando modal está aberto)
+  useEffect(() => {
+    if (!autoRefreshMs || pausePolling) return
+    const id = setInterval(async () => {
+      await refetch()
+      onRefresh?.(new Date())
+    }, autoRefreshMs)
+    return () => clearInterval(id)
+  }, [autoRefreshMs, pausePolling, refetch, onRefresh])
 
   function handleProtocoloChange(e: React.ChangeEvent<HTMLInputElement>) {
     setProtocolo(e.target.value)
@@ -270,6 +293,25 @@ export function WorkflowTable({
           </Select>
         )}
       </div>
+
+      {/* Botão de refresh manual — US-023 */}
+      {showRefreshButton && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5 h-8"
+            onClick={async () => {
+              await refetch()
+              onRefresh?.(new Date())
+            }}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </Button>
+        </div>
+      )}
 
       {/* Erro */}
       {isError && (
@@ -349,7 +391,7 @@ export function WorkflowTable({
                   {/* Secretaria */}
                   {showSecretariaColumn && (
                     <TableCell className="text-sm max-w-[180px] truncate" title={ordem.secretaria_nome}>
-                      {ordem.secretaria_nome}
+                      {formatNomeSecretaria(ordem.secretaria_nome)}
                     </TableCell>
                   )}
 

@@ -18,11 +18,11 @@
  */
 
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Pencil, ShieldCheck, Loader2 } from 'lucide-react'
+import { Plus, Pencil, ShieldCheck, Loader2, KeyRound } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
 
@@ -53,6 +53,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
 import { useAuth } from '@/hooks/useAuth'
@@ -64,6 +74,7 @@ import {
   createUser,
   updateUser,
   updateUserRole,
+  resetUserPassword,
 } from '@/services/userService'
 
 // ---------------------------------------------------------------------------
@@ -585,6 +596,7 @@ export default function UserManagementPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<UserResponse | null>(null)
   const [roleTarget, setRoleTarget] = useState<UserResponse | null>(null)
+  const [resetTarget, setResetTarget] = useState<UserResponse | null>(null)
 
   // Query
   const { data, isLoading, isError } = useQuery({
@@ -602,6 +614,21 @@ export default function UserManagementPage() {
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: ['users'] })
   }
+
+  // US-025: mutation de reset de senha
+  const resetMutation = useMutation({
+    mutationFn: (userId: string) => resetUserPassword(userId),
+    onSuccess: () => {
+      toast.success('Senha resetada.', {
+        description: 'O usuário precisará criar nova senha no próximo login.',
+      })
+      setResetTarget(null)
+      invalidate()
+    },
+    onError: (error: AxiosError<{ detail?: string }>) => {
+      toast.error(extractError(error))
+    },
+  })
 
 
   return (
@@ -708,6 +735,16 @@ export default function UserManagementPage() {
                     >
                       <ShieldCheck className="h-4 w-4" />
                     </Button>
+
+                    {/* Resetar senha — US-025 */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setResetTarget(u)}
+                      aria-label={`Resetar senha de ${u.nome}`}
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -764,6 +801,40 @@ export default function UserManagementPage() {
         onOpenChange={(v) => { if (!v) setRoleTarget(null) }}
         onSuccess={invalidate}
       />
+
+      {/* AlertDialog — Resetar Senha (US-025) */}
+      <AlertDialog
+        open={resetTarget !== null}
+        onOpenChange={(v) => { if (!v) setResetTarget(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Resetar senha de {resetTarget?.nome}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso obrigará o usuário a criar uma nova senha no próximo acesso.
+              A conta será desbloqueada caso esteja bloqueada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => resetTarget && resetMutation.mutate(resetTarget.id)}
+              disabled={resetMutation.isPending}
+            >
+              {resetMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resetando…
+                </>
+              ) : (
+                'Confirmar reset'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

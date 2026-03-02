@@ -24,6 +24,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.documento import OrdemDocumento
 from app.models.enums import StatusOrdemEnum
 from app.models.ordem import Ordem
 from app.models.ordem_historico import OrdemHistorico
@@ -383,6 +384,18 @@ class WorkflowEngine:
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail="Número da nota fiscal (numero_nf) é obrigatório para o atesto.",
                 )
+            # UX-002: ao menos um documento extra (DOCUMENTO_ATESTO) deve estar anexado
+            doc_extra_result = await db.execute(
+                select(OrdemDocumento).where(
+                    OrdemDocumento.ordem_id == ordem_id,
+                    OrdemDocumento.descricao == "DOCUMENTO_ATESTO",
+                )
+            )
+            if doc_extra_result.scalar_one_or_none() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail="Documento de atesto obrigatório. Anexe ao menos um documento extra.",
+                )
             # US-009 RN-48: data_atesto registrada automaticamente
             # US-009 RN-46: atestado_por = usuário que executou o atesto
             ordem.data_atesto = datetime.now(timezone.utc)
@@ -417,6 +430,18 @@ class WorkflowEngine:
                             "difere do valor liquidado."
                         ),
                     )
+            # UX-004: comprovante de pagamento obrigatório
+            comprovante_result = await db.execute(
+                select(OrdemDocumento).where(
+                    OrdemDocumento.ordem_id == ordem_id,
+                    OrdemDocumento.descricao == "COMPROVANTE_PAGAMENTO",
+                )
+            )
+            if comprovante_result.scalar_one_or_none() is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail="Comprovante de pagamento obrigatório. Faça o upload antes de registrar o pagamento.",
+                )
 
         # Aplica campos extras do chamador (sobrescreve efeitos automáticos se necessário)
         if dados_extras:

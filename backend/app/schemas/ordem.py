@@ -34,6 +34,42 @@ FormaPagamentoLiteral = Literal["transferencia", "cheque", "pix"]
 
 
 # ===========================================================================
+# Schema de fornecedor nested — usado em OrdemResponse e OrdemDetailResponse
+# ===========================================================================
+
+
+class FornecedorBasico(BaseModel):
+    """Dados básicos do fornecedor vinculado à ordem (S11.1 + S12.1).
+
+    Incluído em OrdemResponse para evitar chamadas adicionais no front-end.
+    banco/agencia/conta/tipo_conta adicionados em S12.1 para pré-preenchimento
+    no modal de pagamento.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: Annotated[uuid.UUID, Field(description="UUID do fornecedor.")]
+    razao_social: Annotated[str, Field(description="Razão social da empresa.")]
+    cnpj: Annotated[str, Field(description="CNPJ sem pontuação (14 dígitos).")]
+    numero_processo: Annotated[
+        str | None,
+        Field(default=None, description="Número do processo licitatório."),
+    ]
+    valor_contratado: Annotated[
+        Decimal | None,
+        Field(default=None, description="Valor contratado em R$."),
+    ]
+    # S12.1: dados bancários para pré-preenchimento no PagamentoModal
+    banco: Annotated[str | None, Field(default=None, description="Banco.")]
+    agencia: Annotated[str | None, Field(default=None, description="Agência.")]
+    conta: Annotated[str | None, Field(default=None, description="Conta.")]
+    tipo_conta: Annotated[
+        str,
+        Field(default="corrente", description="Tipo de conta: corrente ou poupanca."),
+    ]
+
+
+# ===========================================================================
 # Schemas de ENTRADA (request)
 # ===========================================================================
 
@@ -94,6 +130,13 @@ class OrdemCreate(BaseModel):
             description="US-016: indica se a OS foi assinada via GovBR (declaração do usuário).",
         ),
     ] = False
+
+    # S11.1: fornecedor_id obrigatório para todas as novas ordens (sem Optional, sem default)
+    # A coluna no banco é nullable para preservar ordens históricas sem fornecedor.
+    fornecedor_id: Annotated[
+        uuid.UUID,
+        Field(description="ID do fornecedor vencedor da licitação — obrigatório (S11.1)."),
+    ]
 
 
 class OrdemUpdate(BaseModel):
@@ -434,6 +477,12 @@ class OrdemResponse(BaseModel):
     # Timestamps
     created_at: Annotated[datetime, Field(description="Timestamp de criação.")]
     updated_at: Annotated[datetime, Field(description="Timestamp da última atualização.")]
+
+    # S11.1: fornecedor vinculado (nullable — compat. com ordens históricas sem fornecedor)
+    fornecedor: Annotated[
+        FornecedorBasico | None,
+        Field(default=None, description="Dados do fornecedor vinculado (S11.1)."),
+    ] = None
 
 
 class OrdemDetailResponse(OrdemResponse):

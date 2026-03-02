@@ -64,6 +64,7 @@ import {
   toggleSecretariaStatus,
 } from '@/services/secretariasService'
 import type { SecretariaResponse } from '@/services/secretariasService'
+import { parseBRL, formatCurrencyInput } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -76,7 +77,7 @@ function extractError(error: unknown): string {
 
 function formatCurrency(value: number | null): string {
   if (value === null) return '—'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 // ---------------------------------------------------------------------------
@@ -94,8 +95,8 @@ const secretariaSchema = z.object({
     .optional()
     .refine((v) => {
       if (!v || v.trim() === '') return true
-      const n = parseFloat(v.replace(',', '.'))
-      return !isNaN(n) && n > 0
+      const n = parseBRL(v)
+      return n > 0
     }, 'Orçamento deve ser um número positivo.'),
 })
 
@@ -103,8 +104,8 @@ type SecretariaFormData = z.infer<typeof secretariaSchema>
 
 function parseOrcamento(raw: string | undefined): number | null {
   if (!raw || raw.trim() === '') return null
-  const n = parseFloat(raw.replace(',', '.'))
-  return isNaN(n) ? null : n
+  const n = parseBRL(raw)
+  return n > 0 ? n : null
 }
 
 // ---------------------------------------------------------------------------
@@ -133,7 +134,7 @@ function SecretariaDialog({ target, open, onOpenChange, onSuccess }: SecretariaD
           nome: target.nome,
           sigla: target.sigla,
           orcamento_anual: target.orcamento_anual != null
-            ? String(target.orcamento_anual)
+            ? formatCurrencyInput(target.orcamento_anual)
             : '',
         }
       : undefined,
@@ -217,10 +218,8 @@ function SecretariaDialog({ target, open, onOpenChange, onSuccess }: SecretariaD
             </Label>
             <Input
               id="sec-orcamento"
-              type="number"
-              step="0.01"
-              min="0.01"
-              placeholder="0,00"
+              type="text"
+              placeholder="Ex: 150.000,00"
               disabled={isSubmitting}
               {...register('orcamento_anual')}
             />

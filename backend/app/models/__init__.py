@@ -8,10 +8,11 @@ Ordem de importação respeita dependências de FK:
   2. secretaria   (sem FKs externas)
   3. user         (FK → secretaria)
   4. audit        (FK → user)
-  5. ordem        (FK → secretaria, user)
-  6. ordem_historico (FK → ordem, user)
-  7. notification (FK → ordem, user) — US-014
-  8. documento    (FK → ordem, user) — US-015
+  5. fornecedor   (FK → secretaria) — S11.1
+  6. ordem        (FK → secretaria, user, fornecedor)
+  7. ordem_historico (FK → ordem, user)
+  8. notification (FK → ordem, user) — US-014
+  9. documento    (FK → ordem, user) — US-015
 """
 
 from app.models.enums import (  # noqa: F401
@@ -23,6 +24,7 @@ from app.models.enums import (  # noqa: F401
 from app.models.secretaria import Secretaria  # noqa: F401
 from app.models.user import RoleChangeLog, RoleEnum, User  # noqa: F401
 from app.models.audit import AuditLog  # noqa: F401
+from app.models.fornecedor import Fornecedor  # noqa: F401  — S11.1
 from app.models.ordem import Ordem  # noqa: F401
 from app.models.ordem_historico import OrdemHistorico  # noqa: F401
 from app.models.notification import (  # noqa: F401
@@ -53,4 +55,6 @@ __all__ = [
     "UserNotificationPrefs",
     # Sprint 7 — US-015
     "OrdemDocumento",
+    # Sprint 11 — S11.1
+    "Fornecedor",
 ]

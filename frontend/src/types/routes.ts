@@ -46,6 +46,10 @@ export type SidebarIconKey =
   | 'Landmark'
   // US-019: item de assinatura de liquidação da secretaria
   | 'PenLine'
+  // S11.2: gestão de fornecedores
+  | 'Store'
+  // S12.3: relatório de gastos por fornecedor
+  | 'BarChart2'
 
 /** Definição de um item de menu na sidebar. */
 export interface SidebarItem {
@@ -180,6 +184,30 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/admin/secretarias',
     iconKey: 'Landmark',
     roles: ['admin'],
+  },
+  // S11.2: gestão de fornecedores vencedores de licitação (admin)
+  {
+    key: 'fornecedores-admin',
+    label: 'Gestão de Fornecedores',
+    path: '/admin/fornecedores',
+    iconKey: 'Store',
+    roles: ['admin'],
+  },
+  // S12.2: visibilidade de fornecedores para perfis operacionais (read-only)
+  {
+    key: 'fornecedores-readonly',
+    label: 'Fornecedores',
+    path: '/fornecedores',
+    iconKey: 'Store',
+    roles: ['secretaria', 'gabinete', 'controladoria', 'contabilidade', 'tesouraria'],
+  },
+  // S12.3: relatório de gastos por fornecedor (perfis financeiros + secretaria)
+  {
+    key: 'gastos-fornecedor',
+    label: 'Gastos por Fornecedor',
+    path: '/relatorio/gastos-fornecedor',
+    iconKey: 'BarChart2',
+    roles: ['controladoria', 'contabilidade', 'tesouraria', 'secretaria'],
   },
 ]
 

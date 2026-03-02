@@ -2,8 +2,8 @@
 
 > **Projeto:** Forseti Automações
 > **Gerado por:** Pax (PO Agent) — Synkra AIOS
-> **Atualizado:** 2026-02-28
-> **Total:** 23 itens (16 US + 5 melhorias/bugs + 2 spikes) | 8 Sprints
+> **Atualizado:** 2026-03-02
+> **Total:** 32 itens (20 US + 9 melhorias/bugs + 1 agrupado/UX + 2 spikes) | 10 Sprints
 
 ---
 
@@ -95,12 +95,28 @@
 
 ---
 
-## Sprint 8 — Assinatura da Secretaria na Liquidação (planejada)
+## Sprint 8 — Assinatura da Secretaria na Liquidação
 **Objetivo:** Novo status intermediário + pipeline de assinatura + spike de assinatura digital.
 
 | ID | Arquivo | Título | Status |
 |----|---------|--------|--------|
 | US-019 | [S8.1-US019-assinatura-secretaria-liquidacao.story.md](./S8.1-US019-assinatura-secretaria-liquidacao.story.md) | Assinatura da secretaria na liquidação | Done |
+
+---
+
+## Sprint 9 — Correções, UX e Estabilidade ✅
+**Objetivo:** Corrigir bugs críticos de layout e formatação, tornar Documentos Extras e de suporte obrigatórios, reformular UX da assinatura na liquidação, adicionar auto-refresh no Pipeline de Pagamento e polir consistência visual (valores R$, labels, nomes de secretaria).
+
+| ID | Arquivo | Título | Estimativa | Status |
+|----|---------|--------|-----------|--------|
+| BUG-002 | [S9.1-BUG002-layout-descricao-valor-estimado.story.md](./S9.1-BUG002-layout-descricao-valor-estimado.story.md) | Layout: Descrição sobrepõe Valor Estimado em Minhas Ordens | 2 pts | Draft |
+| BUG-003 | [S9.2-BUG003-formatacao-valor-estimado-reenvio.story.md](./S9.2-BUG003-formatacao-valor-estimado-reenvio.story.md) | Valor Estimado com formatação incorreta ao editar ordem devolvida | 3 pts | Draft |
+| UX-002 | [S9.3-UX002-documentos-extras-obrigatorio-atesto.story.md](./S9.3-UX002-documentos-extras-obrigatorio-atesto.story.md) | Documentos Extras obrigatório no Atesto | 3 pts | Draft |
+| US-022 | [S9.4-US022-reformulacao-ux-assinatura-liquidacao.story.md](./S9.4-US022-reformulacao-ux-assinatura-liquidacao.story.md) | Reformulação UX do fluxo de Assinatura na Liquidação | 8 pts | Draft |
+| US-023 | [S9.5-US023-auto-refresh-pipeline-pagamento.story.md](./S9.5-US023-auto-refresh-pipeline-pagamento.story.md) | Auto-refresh e Botão de Refresh no Pipeline de Pagamento | 5 pts | Draft |
+| S9.6 | [S9.6-polimentos-ui-ux.story.md](./S9.6-polimentos-ui-ux.story.md) | Polimentos UI/UX: Formatação R$, Labels, Nomes de Secretaria e Docs Obrigatórios na Nova Ordem | 8 pts | Draft |
+
+**Sprint 9 Total:** 29 pontos
 
 ---
 
@@ -116,6 +132,10 @@
 | S6 | US-013, US-014 | Admin + Notificações | ✅ Done |
 | S7 | BUG-001, UX-001, US-017, US-018, US-020, US-021 | Melhorias Pipeline + UX | ✅ Done |
 | S8 | US-019 | Assinatura Liquidação | ✅ Done |
+| S9 | BUG-002, BUG-003, UX-002, US-022, US-023, S9.6 | Correções, UX e Estabilidade | ✅ Done |
+| S10 | US-024, US-025, UX-004 | Filtros, Admin e Comprovante Obrigatório | ✅ Done |
+| S11 | S11.1, S11.2, S11.3 | Módulo Fornecedores — Fundação | 🔜 Planejada |
+| S12 | S12.1, S12.2, S12.3 | Módulo Fornecedores — Pipeline e Relatórios | 🔜 Planejada |
 
 ---
 
@@ -159,4 +179,49 @@ Todo story deve ter estes itens antes de ser marcado como Done:
 
 ---
 
-*Índice gerado por Pax (PO Agent) — Synkra AIOS | 2026-02-26*
+---
+
+## Sprint 10 — Filtros, Admin e Comprovante Obrigatório ✅
+**Objetivo:** Adicionar filtros de busca em Minhas Ordens, mecanismo de reset de senha pelo admin e tornar o comprovante de pagamento obrigatório.
+
+| ID | Arquivo | Título | Estimativa | Status |
+|----|---------|--------|-----------|--------|
+| US-024 | [S10.1-US024-filtros-minhas-ordens.story.md](./S10.1-US024-filtros-minhas-ordens.story.md) | Filtros em Minhas Ordens: Período e Prioridade | 8 pts | Done |
+| US-025 | [S10.2-US025-admin-resetar-senha.story.md](./S10.2-US025-admin-resetar-senha.story.md) | Admin: Resetar Senha de Usuário | 5 pts | Done |
+| UX-004 | [S10.3-UX004-comprovante-pagamento-obrigatorio.story.md](./S10.3-UX004-comprovante-pagamento-obrigatorio.story.md) | Comprovante de Pagamento Obrigatório | 3 pts | Done |
+
+**Sprint 10 Total:** 16 pontos
+
+---
+
+---
+
+## Sprint 11 — Módulo Fornecedores: Fundação (planejada)
+**Objetivo:** Criar o modelo de dados, API CRUD e telas de gestão de fornecedores vencedores de licitação.
+**Epic:** [EPIC-E11-fornecedores-licitacao.md](./EPIC-E11-fornecedores-licitacao.md)
+
+| ID | Arquivo | Título | Estimativa | Executor | Status |
+|----|---------|--------|-----------|---------|--------|
+| S11.1 | [S11.1-modelo-dados-api-fornecedores.story.md](./S11.1-modelo-dados-api-fornecedores.story.md) | Modelo de Dados e API de Fornecedores | 5 pts | @data-engineer | Draft |
+| S11.2 | [S11.2-gestao-fornecedores-tela-admin.story.md](./S11.2-gestao-fornecedores-tela-admin.story.md) | Gestão de Fornecedores — Tela Admin | 8 pts | @dev | Draft |
+| S11.3 | [S11.3-vinculo-fornecedor-ordem.story.md](./S11.3-vinculo-fornecedor-ordem.story.md) | Vínculo Fornecedor ↔ Ordem (Nova Ordem + Detalhe) | 6 pts | @dev | Draft |
+
+**Sprint 11 Total:** 19 pontos
+
+---
+
+## Sprint 12 — Módulo Fornecedores: Pipeline e Relatórios (planejada)
+**Objetivo:** Pré-preencher dados bancários no pagamento, expor fornecedores a todos os perfis e criar relatório de gastos.
+**Epic:** [EPIC-E11-fornecedores-licitacao.md](./EPIC-E11-fornecedores-licitacao.md)
+
+| ID | Arquivo | Título | Estimativa | Executor | Status |
+|----|---------|--------|-----------|---------|--------|
+| S12.1 | [S12.1-preenchimento-dados-bancarios-pagamento.story.md](./S12.1-preenchimento-dados-bancarios-pagamento.story.md) | Pré-preenchimento de Dados Bancários no Pagamento | 5 pts | @dev | Draft |
+| S12.2 | [S12.2-visibilidade-fornecedores-perfis-operacionais.story.md](./S12.2-visibilidade-fornecedores-perfis-operacionais.story.md) | Visibilidade de Fornecedores para Perfis Operacionais | 3 pts | @dev | Draft |
+| S12.3 | [S12.3-relatorio-gastos-fornecedor.story.md](./S12.3-relatorio-gastos-fornecedor.story.md) | Relatório de Gastos por Fornecedor (multi-perfil) | 8 pts | @dev | Draft |
+
+**Sprint 12 Total:** 16 pontos
+
+---
+
+*Índice gerado por Pax (PO Agent) — Synkra AIOS | 2026-03-02*

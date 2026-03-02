@@ -117,6 +117,18 @@ async def list_ordens(
         uuid.UUID | None,
         Query(description="Filtrar por UUID de secretaria (perfis globais)"),
     ] = None,
+    prioridade: Annotated[
+        str | None,
+        Query(description="Filtrar por prioridade (NORMAL, ALTA, URGENTE) — US-024"),
+    ] = None,
+    data_inicio: Annotated[
+        date | None,
+        Query(description="Data de criação — início do período (YYYY-MM-DD) — US-024"),
+    ] = None,
+    data_fim: Annotated[
+        date | None,
+        Query(description="Data de criação — fim do período (YYYY-MM-DD) — US-024"),
+    ] = None,
 ) -> OrdemListResponse:
     """Lista ordens com RBAC scoping, filtros e paginação.
 
@@ -124,6 +136,15 @@ async def list_ordens(
     US-004 RN-24: paginação padrão de 20 registros por página.
     US-004 RN-25: busca por protocolo é exata (não parcial).
     """
+    # US-024: data_fim cobre o dia inteiro (23:59:59 UTC)
+    data_inicio_dt = (
+        datetime.combine(data_inicio, time.min).replace(tzinfo=timezone.utc)
+        if data_inicio else None
+    )
+    data_fim_dt = (
+        datetime.combine(data_fim, time.max).replace(tzinfo=timezone.utc)
+        if data_fim else None
+    )
     return await ordem_service.list_ordens(
         db=db,
         user=current_user,
@@ -132,6 +153,9 @@ async def list_ordens(
         status_filter=status,
         protocolo_filter=protocolo,
         secretaria_filter=secretaria_id,
+        prioridade_filter=prioridade,
+        data_inicio_filter=data_inicio_dt,
+        data_fim_filter=data_fim_dt,
     )
 
 

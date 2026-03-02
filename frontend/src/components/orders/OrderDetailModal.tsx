@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils'
 import { getOrdem } from '@/services/ordensService'
 import { useAuthStore } from '@/stores/authStore'
 import { TIPO_ORDEM_LABELS, PRIORIDADE_CONFIG, PRIORIDADE_LABELS } from '@/utils/constants'
+import { formatNomeSecretaria, formatCNPJ } from '@/utils/formatters'
 import type { TipoOrdem, Prioridade, OrdemHistorico, StatusOrdem } from '@/types/ordem'
 
 // US-015 RN: statuses após os quais documentos são somente-leitura
@@ -79,6 +80,27 @@ interface OrderDetailModalProps {
    * Usado em MinhasOrdensPage para exibição somente leitura.
    */
   readOnly?: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Labels de ação para histórico — BUG-005
+// ---------------------------------------------------------------------------
+
+const ACAO_LABELS: Record<string, string> = {
+  criar: 'Criado',
+  autorizar: 'Autorizado',
+  solicitar_alteracao: 'Alteração solicitada',
+  cancelar: 'Cancelado',
+  reenviar: 'Reenviado',
+  aprovar: 'Aprovado',
+  irregularidade: 'Irregularidade registrada',
+  solicitar_documentacao: 'Documentação solicitada',
+  empenhar: 'Empenhado',
+  atestar: 'Atestado',
+  recusar_atesto: 'Atesto recusado',
+  liquidar: 'Liquidado',
+  pagar: 'Pagamento registrado',
+  assinar_liquidacao: 'Assinatura registrada',
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +214,7 @@ function HistoricoEntry({ entry }: { entry: OrdemHistorico }) {
       {/* Conteúdo */}
       <div className="pb-4 flex-1 min-w-0">
         <p className="text-sm">
-          <span className="font-semibold capitalize">{entry.acao.replace(/_/g, ' ')}</span>
+          <span className="font-semibold">{ACAO_LABELS[entry.acao] ?? entry.acao.replace(/_/g, ' ')}</span>
           {' '}
           <span className="text-muted-foreground">
             por {entry.usuario_nome}{' '}
@@ -373,7 +395,7 @@ export function OrderDetailModal({ orderId, onClose, renderActions, readOnly }: 
               <div className="divide-y">
                 <DetailRow label="Protocolo" value={<span className="font-mono">{ordem.protocolo}</span>} />
                 <DetailRow label="Tipo" value={TIPO_ORDEM_LABELS[ordem.tipo as TipoOrdem] ?? ordem.tipo} />
-                <DetailRow label="Secretaria" value={ordem.secretaria_nome} />
+                <DetailRow label="Secretaria" value={formatNomeSecretaria(ordem.secretaria_nome)} />
                 <DetailRow label="Criado por" value={ordem.criador_nome} />
                 {ordem.responsavel && (
                   <DetailRow label="Responsável" value={ordem.responsavel} />
@@ -395,6 +417,35 @@ export function OrderDetailModal({ orderId, onClose, renderActions, readOnly }: 
                   <p className="text-sm text-muted-foreground mb-1">Justificativa</p>
                   <p className="text-sm whitespace-pre-wrap">{ordem.justificativa}</p>
                 </div>
+
+                {/* Fornecedor — S11.3: visível em toda a esteira (defensivo para ordens históricas) */}
+                {ordem.fornecedor && (
+                  <>
+                    <Separator className="my-3" />
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground py-2">
+                      Fornecedor
+                    </p>
+                    <DetailRow label="Razão Social" value={ordem.fornecedor.razao_social} />
+                    <DetailRow label="CNPJ" value={<span className="font-mono">{formatCNPJ(ordem.fornecedor.cnpj)}</span>} />
+                    {ordem.fornecedor.numero_processo && (
+                      <DetailRow label="Nº Processo" value={ordem.fornecedor.numero_processo} />
+                    )}
+                    {ordem.fornecedor.valor_contratado != null && (
+                      <DetailRow label="Valor Contratado" value={formatBRL(ordem.fornecedor.valor_contratado)} />
+                    )}
+                    {ordem.fornecedor.banco && (
+                      <DetailRow
+                        label="Dados Bancários"
+                        value={[
+                          ordem.fornecedor.banco,
+                          ordem.fornecedor.agencia && `Ag. ${ordem.fornecedor.agencia}`,
+                          ordem.fornecedor.conta && `CC ${ordem.fornecedor.conta}`,
+                          ordem.fornecedor.tipo_conta === 'poupanca' ? '(Poupança)' : '(Corrente)',
+                        ].filter(Boolean).join(' · ')}
+                      />
+                    )}
+                  </>
+                )}
 
                 {/* Campos financeiros — exibidos apenas quando preenchidos */}
                 {(ordem.numero_empenho ||
