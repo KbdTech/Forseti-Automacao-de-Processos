@@ -34,6 +34,9 @@ import {
   ClipboardList,
   CircleDollarSign,
   X,
+  Building2,
+  Search,
+  ChevronsUpDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AxiosError } from 'axios'
@@ -68,6 +71,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 
 import { useAuthStore } from '@/stores/authStore'
 import { createOrdem } from '@/services/ordensService'
@@ -95,6 +99,208 @@ function useDebounce<T>(value: T, delay: number): T {
     return () => clearTimeout(id)
   }, [value, delay])
   return debounced
+}
+
+// ---------------------------------------------------------------------------
+// FornecedorCombobox — autocomplete inline sem dependência externa
+// ---------------------------------------------------------------------------
+
+interface FornecedorComboboxProps {
+  value: FornecedorResponse | null
+  onSelect: (f: FornecedorResponse | null) => void
+  options: FornecedorResponse[]
+  isLoading: boolean
+  inputValue: string
+  onInputChange: (v: string) => void
+}
+
+function FornecedorCombobox({
+  value,
+  onSelect,
+  options,
+  isLoading,
+  inputValue,
+  onInputChange,
+}: FornecedorComboboxProps) {
+  const [open, setOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Fecha ao clicar fora
+  useEffect(() => {
+    function handleOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [])
+
+  function handleSelect(f: FornecedorResponse) {
+    onSelect(f)
+    setOpen(false)
+  }
+
+  function handleClear() {
+    onSelect(null)
+    onInputChange('')
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }
+
+  const showDropdown = open && !value
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Campo de entrada */}
+      <div className="relative">
+        {value ? (
+          /* Exibe nome da empresa selecionada no campo */
+          <div
+            className={cn(
+              'flex h-9 w-full items-center rounded-md border bg-muted/30 px-3 pr-8 text-sm',
+              'cursor-default select-none',
+            )}
+          >
+            <Building2 className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="truncate font-medium">{value.razao_social}</span>
+          </div>
+        ) : (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <input
+              ref={inputRef}
+              type="text"
+              autoComplete="off"
+              placeholder="Buscar por razão social ou CNPJ…"
+              value={inputValue}
+              onChange={(e) => {
+                onInputChange(e.target.value)
+                setOpen(true)
+              }}
+              onFocus={() => setOpen(true)}
+              className={cn(
+                'flex h-9 w-full rounded-md border border-input bg-transparent pl-9 pr-8 text-sm',
+                'placeholder:text-muted-foreground outline-none',
+                'focus:ring-2 focus:ring-ring focus:ring-offset-0',
+                'disabled:cursor-not-allowed disabled:opacity-50',
+              )}
+            />
+            {inputValue && (
+              <button
+                type="button"
+                onClick={() => { onInputChange(''); setOpen(false) }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Limpar busca"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            {!inputValue && (
+              <ChevronsUpDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            )}
+          </div>
+        )}
+
+        {/* Botão X para limpar fornecedor selecionado */}
+        {value && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Remover fornecedor selecionado"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Dropdown de resultados */}
+      {showDropdown && (
+        <div
+          className={cn(
+            'absolute z-50 left-0 right-0 mt-1',
+            'rounded-md border bg-popover shadow-md',
+            'animate-in fade-in-0 zoom-in-95 slide-in-from-top-2',
+            'overflow-hidden',
+          )}
+        >
+          {isLoading && (
+            <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Buscando fornecedores…
+            </div>
+          )}
+
+          {!isLoading && options.length === 0 && (
+            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+              Nenhum fornecedor encontrado.
+            </div>
+          )}
+
+          {!isLoading && options.length > 0 && (
+            <ul className="max-h-60 overflow-y-auto py-1" role="listbox">
+              {options.map((f) => (
+                <li key={f.id} role="option" aria-selected={false}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()} // evita blur antes do click
+                    onClick={() => handleSelect(f)}
+                    className="w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-accent transition-colors"
+                  >
+                    <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-tight truncate">{f.razao_social}</p>
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                        {formatCNPJ(f.cnpj)}
+                      </p>
+                      {f.objeto_contrato && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {f.objeto_contrato}
+                        </p>
+                      )}
+                    </div>
+                    {f.secretaria_nome && (
+                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground self-center">
+                        {f.secretaria_nome}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {!isLoading && options.length > 0 && (
+            <div className="border-t px-3 py-1.5 text-[10px] text-muted-foreground">
+              {options.length} resultado{options.length !== 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Card de confirmação após seleção */}
+      {value && (
+        <div className="mt-2 rounded-md border bg-muted/20 px-3 py-2.5 flex items-start gap-2.5">
+          <Building2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold leading-tight">{value.razao_social}</p>
+            <p className="text-xs text-muted-foreground font-mono mt-0.5">{formatCNPJ(value.cnpj)}</p>
+            {value.objeto_contrato && (
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                {value.objeto_contrato}
+              </p>
+            )}
+          </div>
+          {value.secretaria_nome && (
+            <Badge variant="outline" className="shrink-0 self-start text-[10px]">
+              {value.secretaria_nome}
+            </Badge>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -550,60 +756,22 @@ export default function NovaOrdemPage() {
                 </p>
               </div>
 
-              {/* Fornecedor — S11.3: obrigatório em todas as ordens */}
+              {/* Fornecedor — S11.3: obrigatório + autocomplete dinâmico */}
               <div className="space-y-1.5">
                 <Label htmlFor="forn-search">
                   Fornecedor <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="forn-search"
-                  placeholder="Buscar por nome ou CNPJ…"
-                  value={fornecedorSearch}
-                  onChange={(e) => setFornecedorSearch(e.target.value)}
-                  className="h-9 text-sm"
+                <FornecedorCombobox
+                  value={fornecedorSelecionado}
+                  onSelect={setFornecedorSelecionado}
+                  options={fornecedoresData?.items ?? []}
+                  isLoading={isFornecedoresLoading}
+                  inputValue={fornecedorSearch}
+                  onInputChange={setFornecedorSearch}
                 />
-                <Select
-                  value={fornecedorSelecionado?.id ?? ''}
-                  onValueChange={(id) => {
-                    const f = fornecedoresData?.items.find((item) => item.id === id) ?? null
-                    setFornecedorSelecionado(f)
-                  }}
-                >
-                  <SelectTrigger
-                    className={!fornecedorSelecionado ? 'border-muted-foreground/40' : ''}
-                  >
-                    <SelectValue placeholder="Selecionar fornecedor da licitação…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isFornecedoresLoading && (
-                      <div className="px-2 py-3 text-xs text-muted-foreground text-center">
-                        Carregando fornecedores…
-                      </div>
-                    )}
-                    {!isFornecedoresLoading && !fornecedoresData?.items.length && (
-                      <div className="px-2 py-3 text-xs text-muted-foreground text-center">
-                        Nenhum fornecedor disponível.
-                      </div>
-                    )}
-                    {fornecedoresData?.items.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        <span className="font-medium">{f.razao_social}</span>
-                        <span className="ml-2 text-xs text-muted-foreground font-mono">
-                          {formatCNPJ(f.cnpj)}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!fornecedoresData?.items.length && !isFornecedoresLoading && (
+                {!fornecedorSelecionado && !fornecedoresData?.items.length && !isFornecedoresLoading && (
                   <p className="text-xs text-muted-foreground">
                     Solicite ao administrador o cadastro do fornecedor antes de criar a ordem.
-                  </p>
-                )}
-                {fornecedorSelecionado && (
-                  <p className="text-xs text-muted-foreground">
-                    Selecionado: <span className="font-medium">{fornecedorSelecionado.razao_social}</span>
-                    {' '}— {formatCNPJ(fornecedorSelecionado.cnpj)}
                   </p>
                 )}
               </div>
