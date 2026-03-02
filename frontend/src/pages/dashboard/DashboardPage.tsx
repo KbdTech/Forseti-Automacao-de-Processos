@@ -327,6 +327,7 @@ export default function DashboardPage() {
   // ---------------------------------------------------------------------------
 
   return (
+    <>
     <div className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
 
       {/* Cabeçalho */}
@@ -749,5 +750,6 @@ export default function DashboardPage() {
       fornecedorId={selectedFornecedorId}
       onClose={() => setSelectedFornecedorId(null)}
     />
+    </>
   )
 }
