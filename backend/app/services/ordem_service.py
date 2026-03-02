@@ -295,7 +295,7 @@ class OrdemService:
         Raises:
             HTTPException 422: Valor de status inválido.
         """
-        opts = [selectinload(Ordem.secretaria), selectinload(Ordem.criador)]
+        opts = [selectinload(Ordem.secretaria), selectinload(Ordem.criador), selectinload(Ordem.fornecedor)]
         base_query = select(Ordem).options(*opts)
         count_query = select(func.count()).select_from(Ordem)
 
@@ -408,6 +408,7 @@ class OrdemService:
             .options(
                 selectinload(Ordem.secretaria),
                 selectinload(Ordem.criador),
+                selectinload(Ordem.fornecedor),
             )
         )
         ordem = ordem_result.scalar_one_or_none()
