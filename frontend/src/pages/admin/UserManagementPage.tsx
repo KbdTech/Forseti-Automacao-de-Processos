@@ -87,6 +87,7 @@ const ROLES: RoleEnum[] = [
   'controladoria',
   'contabilidade',
   'tesouraria',
+  'compras',   // S13.2: Setor de Compras/Licitações
   'admin',
 ]
 

@@ -141,6 +141,11 @@ def gabinete_user() -> MagicMock:
 
 
 @pytest.fixture
+def compras_user() -> MagicMock:
+    return make_user(role=RoleEnum.compras, secretaria_id=None)
+
+
+@pytest.fixture
 def mock_db() -> AsyncMock:
     return make_db()
 
@@ -204,6 +209,29 @@ async def gabinete_client(gabinete_user: MagicMock, mock_db: AsyncMock) -> Async
 
     app.dependency_overrides[get_db] = _get_db
     app.dependency_overrides[get_current_user] = _get_gabinete
+
+    async with AsyncClient(
+        transport=__import__("httpx").ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides = overrides_backup
+
+
+@pytest.fixture
+async def compras_client(compras_user: MagicMock, mock_db: AsyncMock) -> AsyncClient:
+    """Cliente HTTP autenticado como compras (Setor de Compras/Licitações)."""
+    overrides_backup = app.dependency_overrides.copy()
+
+    async def _get_db():
+        yield mock_db
+
+    async def _get_compras():
+        return compras_user
+
+    app.dependency_overrides[get_db] = _get_db
+    app.dependency_overrides[get_current_user] = _get_compras
 
     async with AsyncClient(
         transport=__import__("httpx").ASGITransport(app=app),
@@ -658,6 +686,92 @@ async def test_ordem_service_create_fornecedor_inativo() -> None:
 
     assert exc_info.value.status_code == 422
     assert "inativo" in exc_info.value.detail.lower()
+
+
+# ===========================================================================
+# S13.1 — RBAC: perfil 'compras' nos endpoints de fornecedores
+# ===========================================================================
+
+
+async def test_compras_pode_criar_fornecedor(
+    compras_client: AsyncClient,
+    compras_user: MagicMock,
+) -> None:
+    """S13.1 Cenário 2: compras cria fornecedor com dados válidos → 201."""
+    fornecedor = make_fornecedor()
+    expected = make_fornecedor_response(fornecedor)
+
+    with patch(f"{SERVICE}.create_fornecedor", new_callable=AsyncMock, return_value=expected):
+        resp = await compras_client.post(
+            "/api/fornecedores/",
+            json={
+                "razao_social": "Empresa Licitação Ltda.",
+                "cnpj": "12345678000195",
+                "tipo_conta": "corrente",
+            },
+        )
+
+    assert resp.status_code == 201
+    assert resp.json()["cnpj"] == "12345678000195"
+
+
+async def test_compras_pode_editar_fornecedor(
+    compras_client: AsyncClient,
+) -> None:
+    """S13.1 Cenário 2: compras edita fornecedor → 200."""
+    fornecedor = make_fornecedor()
+    fornecedor.razao_social = "Empresa Editada Ltda."
+    expected = make_fornecedor_response(fornecedor)
+
+    with patch(f"{SERVICE}.update_fornecedor", new_callable=AsyncMock, return_value=expected):
+        resp = await compras_client.put(
+            f"/api/fornecedores/{fornecedor.id}",
+            json={"razao_social": "Empresa Editada Ltda."},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["razao_social"] == "Empresa Editada Ltda."
+
+
+async def test_compras_pode_toggle_status(
+    compras_client: AsyncClient,
+) -> None:
+    """S13.1 Cenário 2: compras altera status de fornecedor → 200."""
+    fornecedor = make_fornecedor(is_active=False)
+    expected = make_fornecedor_response(fornecedor)
+    expected.is_active = False
+
+    with patch(f"{SERVICE}.toggle_status", new_callable=AsyncMock, return_value=expected):
+        resp = await compras_client.patch(
+            f"/api/fornecedores/{fornecedor.id}/status",
+            json={"is_active": False},
+        )
+
+    assert resp.status_code == 200
+    assert resp.json()["is_active"] is False
+
+
+async def test_compras_nao_acessa_ordens(
+    compras_client: AsyncClient,
+) -> None:
+    """S13.1 Cenário 3: compras não acessa GET /api/ordens → 403."""
+    resp = await compras_client.get("/api/ordens/")
+    assert resp.status_code == 403
+
+
+async def test_secretaria_ainda_nao_cria_fornecedor(
+    secretaria_client: AsyncClient,
+) -> None:
+    """S13.1 Cenário 3: secretaria ainda não pode criar fornecedor → 403 (sem regressão)."""
+    resp = await secretaria_client.post(
+        "/api/fornecedores/",
+        json={
+            "razao_social": "Tentativa Secretaria",
+            "cnpj": "12345678000195",
+            "tipo_conta": "corrente",
+        },
+    )
+    assert resp.status_code == 403
 
 
 @pytest.mark.asyncio

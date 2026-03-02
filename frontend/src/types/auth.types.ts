@@ -20,6 +20,7 @@ export type RoleEnum =
   | 'controladoria'
   | 'contabilidade'
   | 'tesouraria'
+  | 'compras'    // S13.2: perfil do Setor de Compras/Licitações
   | 'admin'
 
 // ---------------------------------------------------------------------------

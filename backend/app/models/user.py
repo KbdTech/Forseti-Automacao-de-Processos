@@ -50,6 +50,7 @@ class RoleEnum(str, enum.Enum):
     controladoria = "controladoria"
     contabilidade = "contabilidade"
     tesouraria = "tesouraria"
+    compras = "compras"   # S13.1: perfil do Setor de Compras/Licitações
     admin = "admin"
 
 

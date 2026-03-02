@@ -32,7 +32,8 @@ from app.services.fornecedor_service import fornecedor_service
 router = APIRouter(prefix="/api/fornecedores", tags=["Fornecedores"])
 
 # Dependency aliases
-AdminRequired = Annotated[User, Depends(require_role(RoleEnum.admin))]
+# S13.1: perfil 'compras' pode criar/editar/desativar fornecedores
+ComprasOrAdmin = Annotated[User, Depends(require_role(RoleEnum.compras, RoleEnum.admin))]
 AnyAuthenticated = Annotated[User, Depends(get_current_user)]
 
 
@@ -86,12 +87,12 @@ async def list_fornecedores(
     status_code=201,
     responses={
         409: {"description": "CNPJ já cadastrado"},
-        403: {"description": "Acesso negado — perfil admin obrigatório"},
+        403: {"description": "Acesso negado — perfis admin ou compras obrigatório"},
     },
 )
 async def create_fornecedor(
     payload: FornecedorCreate,
-    current_user: AdminRequired,
+    current_user: ComprasOrAdmin,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> FornecedorResponse:
     """Cria novo fornecedor vencedor de licitação.
@@ -146,7 +147,7 @@ async def get_fornecedor(
 async def update_fornecedor(
     fornecedor_id: uuid.UUID,
     payload: FornecedorUpdate,
-    current_user: AdminRequired,
+    current_user: ComprasOrAdmin,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> FornecedorResponse:
     """Atualiza dados de um fornecedor.
@@ -176,7 +177,7 @@ async def update_fornecedor(
 async def toggle_status(
     fornecedor_id: uuid.UUID,
     payload: FornecedorStatusUpdate,
-    current_user: AdminRequired,
+    current_user: ComprasOrAdmin,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> FornecedorResponse:
     """Ativa ou desativa um fornecedor.

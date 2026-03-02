@@ -40,6 +40,15 @@ router = APIRouter(prefix="/api/ordens", tags=["Ordens"])
 SecretariaRequired = Annotated[User, Depends(require_role(RoleEnum.secretaria))]
 # Qualquer usuário autenticado
 AnyAuthenticated = Annotated[User, Depends(get_current_user)]
+# S13.1: perfis que participam do pipeline de ordens (exclui 'compras')
+PipelineAllowed = Annotated[User, Depends(require_role(
+    RoleEnum.secretaria,
+    RoleEnum.gabinete,
+    RoleEnum.controladoria,
+    RoleEnum.contabilidade,
+    RoleEnum.tesouraria,
+    RoleEnum.admin,
+))]
 
 
 # ---------------------------------------------------------------------------
@@ -99,7 +108,7 @@ async def create_ordem(
     status_code=200,
 )
 async def list_ordens(
-    current_user: AnyAuthenticated,
+    current_user: PipelineAllowed,
     db: Annotated[AsyncSession, Depends(get_db)],
     page: Annotated[int, Query(ge=1, description="Página (1-based)")] = 1,
     limit: Annotated[
@@ -175,7 +184,7 @@ async def list_ordens(
 )
 async def get_ordem(
     ordem_id: uuid.UUID,
-    current_user: AnyAuthenticated,
+    current_user: PipelineAllowed,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OrdemDetailResponse:
     """Retorna detalhe completo da ordem com histórico de tramitação.
@@ -243,7 +252,7 @@ async def update_ordem(
 async def executar_acao(
     ordem_id: uuid.UUID,
     body: Annotated[dict[str, Any], Body()],
-    current_user: AnyAuthenticated,
+    current_user: PipelineAllowed,
     db: Annotated[AsyncSession, Depends(get_db)],
     client_ip: Annotated[str | None, Depends(get_client_ip)],
     background_tasks: BackgroundTasks,

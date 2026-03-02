@@ -144,7 +144,8 @@ export const router = createBrowserRouter([
       {
         path: 'admin/fornecedores',
         element: (
-          <Guard roles={['admin']}>
+          // S13.2: perfil 'compras' tem CRUD completo de fornecedores
+          <Guard roles={['admin', 'compras']}>
             <FornecedoresAdminPage />
           </Guard>
         ),

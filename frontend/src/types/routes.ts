@@ -21,6 +21,7 @@ export const DEFAULT_ROUTE: Record<RoleEnum, string> = {
   controladoria: '/controladoria',
   contabilidade: '/contabilidade/empenho',
   tesouraria: '/tesouraria/pagamento',
+  compras: '/admin/fornecedores',  // S13.2: setor de compras acessa apenas fornecedores
   admin: '/admin/usuarios',
 }
 
@@ -186,12 +187,13 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     roles: ['admin'],
   },
   // S11.2: gestão de fornecedores vencedores de licitação (admin)
+  // S13.2: perfil 'compras' também acessa esta tela com CRUD completo
   {
     key: 'fornecedores-admin',
     label: 'Gestão de Fornecedores',
     path: '/admin/fornecedores',
     iconKey: 'Store',
-    roles: ['admin'],
+    roles: ['admin', 'compras'],
   },
   // S12.2: visibilidade de fornecedores para perfis operacionais (read-only)
   {
@@ -218,5 +220,6 @@ export const ROLE_LABEL: Record<RoleEnum, string> = {
   controladoria: 'Controladoria',
   contabilidade: 'Contabilidade',
   tesouraria: 'Tesouraria',
+  compras: 'Setor de Compras',  // S13.2
   admin: 'Administrador',
 }
