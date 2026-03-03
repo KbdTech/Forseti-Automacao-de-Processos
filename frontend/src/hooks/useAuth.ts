@@ -23,6 +23,7 @@ const ROLE_REDIRECT: Record<RoleEnum, string> = {
   controladoria: '/controladoria',
   contabilidade: '/contabilidade/empenho',
   tesouraria: '/tesouraria/pagamento',
+  compras: '/admin/fornecedores',
   admin: '/admin/usuarios',
 }
 

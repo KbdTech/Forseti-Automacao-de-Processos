@@ -59,7 +59,6 @@ import { formatBRL as formatBRLUtil, formatCNPJ, formatNomeSecretaria } from '@/
 import { useAuth } from '@/hooks/useAuth'
 import { STATUS_CONFIG } from '@/utils/constants'
 import type { StatusOrdem } from '@/types/ordem'
-import type { GastoMes } from '@/types/fornecedor'
 
 // ---------------------------------------------------------------------------
 // Constantes

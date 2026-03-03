@@ -46,6 +46,7 @@ export type StatusOrdem =
 export interface FornecedorBasico {
   id: string
   razao_social: string
+  nome_fantasia?: string | null
   cnpj: string
   numero_processo: string | null
   valor_contratado: number | null

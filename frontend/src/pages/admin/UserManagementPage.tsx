@@ -122,6 +122,7 @@ const createSchema = z.object({
     'controladoria',
     'contabilidade',
     'tesouraria',
+    'compras',
     'admin',
   ] as const),
   secretaria_id: z.string().uuid('UUID inválido.').nullable().optional(),
@@ -152,6 +153,7 @@ const roleSchema = z.object({
     'controladoria',
     'contabilidade',
     'tesouraria',
+    'compras',
     'admin',
   ] as const),
 })

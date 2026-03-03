@@ -400,7 +400,7 @@ export function WorkflowTable({
                     {ordem.assinatura_govbr && (
                       <ShieldCheck
                         className="h-4 w-4 mx-auto text-green-600"
-                        title="Assinada via GovBR"
+                        aria-label="Assinada via GovBR"
                       />
                     )}
                   </TableCell>

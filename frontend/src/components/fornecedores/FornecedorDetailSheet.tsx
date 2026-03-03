@@ -58,7 +58,7 @@ import {
 } from '@/services/fornecedoresService'
 import { formatBRL, formatCNPJ } from '@/utils/formatters'
 import { useAuthStore } from '@/stores/authStore'
-import type { GastoMes } from '@/types/fornecedor'
+import type { GastoMes, FornecedorResumo } from '@/types/fornecedor'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -275,7 +275,7 @@ function TabResumo({ data }: { data: ReturnType<typeof getFornecedorResumo> exte
 // Sub: Tab Ordens
 // ---------------------------------------------------------------------------
 
-function TabOrdens({ ordens }: { ordens: ReturnType<typeof getFornecedorResumo> extends Promise<infer T> ? T['ultimas_ordens'] : never }) {
+function TabOrdens({ ordens }: { ordens: FornecedorResumo['ultimas_ordens'] }) {
   if (ordens.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-10 text-center">
