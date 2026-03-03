@@ -16,6 +16,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
+import { Analytics } from '@vercel/analytics/react'
 
 import { router } from '@/routes/index'
 
@@ -43,6 +44,7 @@ export default function App() {
       <RouterProvider router={router} />
       {/* Toast notifications globais — posição e cores configuradas uma vez */}
       <Toaster richColors position="top-right" />
+      <Analytics />
     </QueryClientProvider>
   )
 }
