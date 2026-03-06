@@ -389,9 +389,9 @@ class WorkflowEngine:
                 select(OrdemDocumento).where(
                     OrdemDocumento.ordem_id == ordem_id,
                     OrdemDocumento.descricao == "DOCUMENTO_ATESTO",
-                )
+                ).limit(1)
             )
-            if doc_extra_result.scalar_one_or_none() is None:
+            if doc_extra_result.first() is None:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail="Documento de atesto obrigatório. Anexe ao menos um documento extra.",
@@ -435,9 +435,9 @@ class WorkflowEngine:
                 select(OrdemDocumento).where(
                     OrdemDocumento.ordem_id == ordem_id,
                     OrdemDocumento.descricao == "COMPROVANTE_PAGAMENTO",
-                )
+                ).limit(1)
             )
-            if comprovante_result.scalar_one_or_none() is None:
+            if comprovante_result.first() is None:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail="Comprovante de pagamento obrigatório. Faça o upload antes de registrar o pagamento.",
