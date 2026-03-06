@@ -428,7 +428,8 @@ class DocumentoService:
             "Content-Type": "application/json",
         }
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.delete(
+            response = await client.request(
+                "DELETE",
                 url,
                 json={"prefixes": [path]},
                 headers=headers,
