@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/dialog'
 
 import { getOrdem, executeAcao } from '@/services/ordensService'
-import { uploadDocumento } from '@/services/documentosService'
+import { uploadDocumento, deleteDocumento } from '@/services/documentosService'
 import { extractApiError, formatBRL } from '@/utils/formatters'
 
 // ---------------------------------------------------------------------------
@@ -128,20 +128,29 @@ export function AtesteModal({ orderId, onClose, onSuccess }: AtesteModalProps) {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      // US-018 passo 1 — upload da nota fiscal
-      if (arquivoNf) {
-        await uploadDocumento(orderId!, { file: arquivoNf, descricao: 'NOTA_FISCAL' })
+      const uploadedIds: string[] = []
+      try {
+        // US-018 passo 1 — upload da nota fiscal
+        if (arquivoNf) {
+          const doc = await uploadDocumento(orderId!, { file: arquivoNf, descricao: 'NOTA_FISCAL' })
+          uploadedIds.push(doc.id)
+        }
+        // US-018 passo 2 — upload de documentos extras
+        for (const extra of documentosExtras) {
+          const doc = await uploadDocumento(orderId!, { file: extra, descricao: 'DOCUMENTO_ATESTO' })
+          uploadedIds.push(doc.id)
+        }
+        // Passo 3 — registrar atesto
+        return await executeAcao(orderId!, {
+          acao: 'atestar',
+          numero_nf: numeroNf.trim(),
+          ...(observacao.trim() ? { observacao: observacao.trim() } : {}),
+        })
+      } catch (error) {
+        // Limpar uploads já realizados para não deixar documentos órfãos
+        await Promise.allSettled(uploadedIds.map((id) => deleteDocumento(id)))
+        throw error
       }
-      // US-018 passo 2 — upload de documentos extras
-      for (const extra of documentosExtras) {
-        await uploadDocumento(orderId!, { file: extra, descricao: 'DOCUMENTO_ATESTO' })
-      }
-      // Passo 3 — registrar atesto
-      return executeAcao(orderId!, {
-        acao: 'atestar',
-        numero_nf: numeroNf.trim(),
-        ...(observacao.trim() ? { observacao: observacao.trim() } : {}),
-      })
     },
     onSuccess: () => {
       toast.success('Atesto registrado', {
