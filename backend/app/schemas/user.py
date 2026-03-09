@@ -25,6 +25,7 @@ RoleLiteral = Literal[
     "contabilidade",
     "tesouraria",
     "admin",
+    "compras",
 ]
 
 

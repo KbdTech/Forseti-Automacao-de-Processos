@@ -92,8 +92,12 @@ const ROLES: RoleEnum[] = [
 ]
 
 function extractError(error: unknown): string {
-  const axiosErr = error as AxiosError<{ detail?: string }>
-  return axiosErr.response?.data?.detail ?? 'Erro inesperado. Tente novamente.'
+  const axiosErr = error as AxiosError<{ detail?: string | Array<{ msg: string }> }>
+  const detail = axiosErr.response?.data?.detail
+  if (Array.isArray(detail)) {
+    return detail.map((e) => e.msg).join('; ')
+  }
+  return detail ?? 'Erro inesperado. Tente novamente.'
 }
 
 function StatusBadge({ isActive }: { isActive: boolean }) {
